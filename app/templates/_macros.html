@@ -7,6 +7,14 @@
   {%- endif -%}
 {% endmacro %}
 
+{% macro firewall_status(status) %}
+  {%- if status == 'ok' -%}<span class="badge badge-ok">Em dia</span>
+  {%- elif status == 'atrasado' -%}<span class="badge badge-fail">Atrasado</span>
+  {%- elif status == 'aguardando' -%}<span class="badge badge-info">Aguardando 1º envio</span>
+  {%- else -%}<span class="badge badge-muted">Inativo</span>
+  {%- endif -%}
+{% endmacro %}
+
 {% macro trigger_label(trigger) %}
   {%- if trigger == 'agendado' -%}Agendado{%- else -%}Manual{%- endif -%}
 {% endmacro %}

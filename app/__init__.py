@@ -55,8 +55,10 @@ def create_app():
 
     data_dir = Path(os.environ.get("DATA_DIR", "/data"))
     backup_dir = data_dir / "backups"
+    firewall_dir = data_dir / "firewalls"
     keys_dir = data_dir / "keys"
     backup_dir.mkdir(parents=True, exist_ok=True)
+    firewall_dir.mkdir(parents=True, exist_ok=True)
 
     app = Flask(__name__)
     app.config.update(
@@ -65,6 +67,13 @@ def create_app():
         SQLALCHEMY_ENGINE_OPTIONS={"connect_args": {"check_same_thread": False, "timeout": 30}},
         BACKUP_DIR=str(backup_dir),
         BACKUP_WORKERS=int(os.environ.get("BACKUP_WORKERS", "4")),
+        FIREWALL_DIR=str(firewall_dir),
+        FIREWALL_CHECK_SECONDS=int(os.environ.get("FIREWALL_CHECK_SECONDS", "3600")),
+        FTP_ENABLED=_env_bool("FTP_ENABLED", True),
+        FTP_LISTEN_PORT=int(os.environ.get("FTP_LISTEN_PORT", "2121")),
+        FTP_PORT=int(os.environ.get("FTP_PORT", "21")),
+        FTP_PUBLIC_HOST=os.environ.get("FTP_PUBLIC_HOST", "").strip(),
+        FTP_PASSIVE_PORTS=os.environ.get("FTP_PASSIVE_PORTS", "30000-30009").strip(),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=_env_bool("SESSION_COOKIE_SECURE"),
@@ -82,8 +91,12 @@ def create_app():
     login_manager.init_app(app)
     csrf.init_app(app)
 
+    from .firewalls import models as _firewall_models  # noqa: F401 - registra as tabelas do módulo
+    from .migrate import auto_migrate
+
     with app.app_context():
         db.create_all()
+        auto_migrate(db)
         Settings.get()
 
     from .views import register_blueprints
@@ -120,5 +133,10 @@ def create_app():
         from .scheduler import init_scheduler
 
         init_scheduler(app)
+
+    if app.config["FTP_ENABLED"]:
+        from .firewalls.ftp_server import start_ftp_server
+
+        start_ftp_server(app)
 
     return app

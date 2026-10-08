@@ -14,6 +14,9 @@ Aplicação web (Docker) para backup automático da configuração de switches
 - **Agendamento e retenção**: expressão cron, retenção por dias e/ou quantidade máxima por switch
 - **Alertas SMTP**: falha de backup, configuração alterada, switch sem backup há N dias, resumo de sucesso
 - **Usuários**: criação, troca de senha e remoção
+- **Módulo Firewalls**: servidor FTP embutido para SonicWall/FortiGate enviarem seus backups, com usuário FTP
+  por firewall, diretório próprio, retenção, download e alerta de backup não recebido
+  ([detalhes](#módulo-firewalls-ftp))
 
 Equipamentos suportados (via [Netmiko](https://github.com/ktbyers/netmiko)): Cisco IOS/IOS-XE/NX-OS/SMB,
 HP ProCurve/Aruba OS-Switch, Aruba AOS-CX, HPE Comware/H3C, Huawei, Dell OS10/OS9, Juniper,
@@ -56,8 +59,10 @@ não fique no mesmo volume dos dados.
 ├── keys/
 │   ├── encryption.key    # chave Fernet das credenciais
 │   └── session.key       # chave de assinatura das sessões
-└── backups/
-    └── switch_<id>/<nome>_<AAAAMMDD-HHMMSS>.cfg
+├── backups/                                   # módulo Switches
+│   └── switch_<id>/<nome>_<AAAAMMDD-HHMMSS>.cfg
+└── firewalls/                                 # módulo Firewalls (home FTP de cada um)
+    └── <NOME-DO-FIREWALL>/<arquivo>_<AAAAMMDD-HHMMSS>.<ext>
 ```
 
 Para fazer backup do próprio Switch Safe, copie o volume:
@@ -101,6 +106,42 @@ ignoradas na comparação, evitando falsos alertas de "configuração alterada".
 
 A aplicação fala HTTP. Para expor fora da rede de gerência, coloque-a atrás de um proxy reverso com TLS
 (nginx, Traefik, Caddy) e defina `SESSION_COOKIE_SECURE=true` e `TRUST_PROXY=true`.
+
+## Módulo Firewalls (FTP)
+
+Firewalls como SonicWall e FortiGate **enviam** o backup agendado para um servidor FTP. O Switch Safe tem um
+servidor FTP embutido para isso:
+
+1. Em **Firewalls › Cadastrar firewall**, informe nome, fabricante, usuário FTP e senha (botão *Gerar*).
+   Opcionalmente restrinja os IPs de origem e defina em quantas horas o backup deve chegar.
+2. A tela do firewall mostra os dados para configurar no equipamento (servidor, porta, usuário, modo passivo).
+3. No firewall, agende o backup/exportação de configuração via FTP com esses dados.
+
+Como funciona:
+
+- Cada firewall tem **usuário FTP próprio** (senha em **hash Argon2**, irreversível) e fica **preso ao seu
+  diretório** `/data/firewalls/<NOME>/`. Pode apenas listar e enviar: não baixa, não apaga, não renomeia.
+- Cada arquivo recebido é **renomeado com data/hora** (`backup_20261008-020000.exp`) para nunca sobrescrever o
+  anterior, e registrado com tamanho, SHA-256, IP de origem e indicação de conteúdo alterado.
+- Se o backup **não chegar no intervalo esperado**, é enviado um alerta por e-mail (uma vez, até voltar a chegar).
+- Retenção própria do módulo em **Firewalls › Configurações** (dias e quantidade por firewall).
+- Após 5 senhas erradas em 10 min o IP é bloqueado temporariamente.
+
+Configuração no `.env`:
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `FTP_PUBLIC_HOST` | — | **IP deste servidor como os firewalls o enxergam.** Obrigatório para o modo passivo funcionar através do Docker |
+| `FTP_PORT` | `21` | Porta FTP exposta no host |
+| `FTP_PASSIVE_PORTS` | `30000-30009` | Faixa passiva (libere no firewall de rede; 10 portas = 10 envios simultâneos) |
+| `FTP_ENABLED` | `true` | Desliga o servidor FTP |
+
+> **FTP não é criptografado.** Mantenha o tráfego na rede de gerência e use a restrição de IP por firewall.
+
+> **Restrição de IP e Docker:** confira em *Último login FTP* se o IP exibido é o do firewall. Se aparecer o
+> gateway do Docker (ex.: `172.18.0.1`), o Docker está mascarando a origem (comum no Docker Desktop/WSL ou com
+> `userland-proxy`); nesse caso a restrição por IP não funciona — use `network_mode: host` no serviço ou deixe o
+> campo em branco.
 
 ## Switch simulado (demonstração)
 
@@ -153,7 +194,7 @@ bash tests/run_e2e.sh
 ```
 
 Sobe um ambiente isolado (projeto `switch-safe-test`, com volume próprio) contendo o app, o switch simulado
-e um servidor SMTP falso; executa ~57 verificações (login, criptografia, backup com/sem enable, falhas,
+e um servidor SMTP falso; executa ~106 verificações (login, criptografia, backup com/sem enable, falhas, módulo FTP de firewalls,
 detecção de alteração, alertas, retenção, downloads) e remove tudo ao final. Não afeta a instância real.
 
 ## Observações

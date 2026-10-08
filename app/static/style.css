@@ -196,6 +196,17 @@ pre.config, .diff {
 .diff .d-hunk { color: var(--info); background: var(--info-bg); margin-top: 6px; }
 .diff .d-head { color: var(--muted); font-weight: 600; }
 
+.module-title { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; }
+.module-title:first-of-type { margin-top: 0; }
+.cards-row { gap: 0 18px; }
+dl.info { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+dl.info dt { color: var(--muted); }
+dl.info dd { margin: 0; overflow-wrap: anywhere; }
+.input-group { display: flex; gap: 6px; }
+.input-group input { flex: 1; }
+code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+h1 .badge { vertical-align: middle; font-size: 12px; }
+
 .pagination { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 14px; }
 
 /* Auth */

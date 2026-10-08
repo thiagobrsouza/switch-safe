@@ -35,8 +35,13 @@
         <a href="{{ url_for('switches.list') }}" class="{{ 'active' if ep in ['switches.list', 'switches.edit'] }}">Switches monitorados</a>
         <a href="{{ url_for('switches.create') }}" class="{{ 'active' if ep == 'switches.create' }}">Cadastrar switch</a>
         <a href="{{ url_for('backups.list') }}" class="{{ 'active' if ep.startswith('backups.') }}">Backups</a>
-        <div class="nav-section">Configurações</div>
-        <a href="{{ url_for('settings.retention') }}" class="{{ 'active' if ep == 'settings.retention' }}">Agendamento e retenção</a>
+        <a href="{{ url_for('settings.retention') }}" class="{{ 'active' if ep == 'settings.retention' }}">Configurações</a>
+        <div class="nav-section">Firewalls</div>
+        <a href="{{ url_for('firewalls.list') }}" class="{{ 'active' if ep in ['firewalls.list', 'firewalls.edit', 'firewalls.view'] }}">Firewalls</a>
+        <a href="{{ url_for('firewalls.create') }}" class="{{ 'active' if ep == 'firewalls.create' }}">Cadastrar firewall</a>
+        <a href="{{ url_for('firewalls.backups') }}" class="{{ 'active' if ep == 'firewalls.backups' }}">Backups</a>
+        <a href="{{ url_for('firewalls.settings') }}" class="{{ 'active' if ep == 'firewalls.settings' }}">Configurações</a>
+        <div class="nav-section">Sistema</div>
         <a href="{{ url_for('settings.alerts') }}" class="{{ 'active' if ep == 'settings.alerts' }}">Alertas (SMTP)</a>
         <a href="{{ url_for('users.list') }}" class="{{ 'active' if ep == 'users.list' }}">Usuários</a>
       </nav>

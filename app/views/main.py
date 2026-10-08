@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template
 from sqlalchemy import func
 
+from ..firewalls.models import Firewall, FirewallBackup
 from ..models import Backup, Settings, Switch, db
 from ..scheduler import next_run_time
 
@@ -17,11 +18,21 @@ def dashboard():
         "backups": Backup.query.filter_by(status="success").count(),
         "storage": db.session.query(func.coalesce(func.sum(Backup.size), 0)).scalar(),
     }
+    firewalls = Firewall.query.order_by(Firewall.name).all()
+    fw_stats = {
+        "total": len(firewalls),
+        "enabled": sum(1 for f in firewalls if f.enabled),
+        "overdue": sum(1 for f in firewalls if f.status == "atrasado"),
+        "backups": FirewallBackup.query.count(),
+        "storage": db.session.query(func.coalesce(func.sum(FirewallBackup.size), 0)).scalar(),
+    }
     recent = Backup.query.order_by(Backup.created_at.desc()).limit(10).all()
     return render_template(
         "dashboard.html",
         switches=switches,
         stats=stats,
+        firewalls=firewalls,
+        fw_stats=fw_stats,
         recent=recent,
         settings=Settings.get(),
         next_run=next_run_time(),

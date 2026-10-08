@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Backups de firewalls{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Backups de firewalls</h1>
+    <p class="muted">{{ page.total }} arquivo(s)</p>
+  </div>
+  <a href="{{ url_for('firewalls.latest_zip') }}" class="btn btn-primary">Baixar últimos backups (ZIP)</a>
+</div>
+
+<form method="get" class="card filters">
+  <label>Firewall
+    <select name="firewall_id">
+      <option value="">Todos</option>
+      {% for fw in firewalls %}
+        <option value="{{ fw.id }}" {{ 'selected' if firewall_id == fw.id }}>{{ fw.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn">Filtrar</button>
+  {% if firewall_id %}<a href="{{ url_for('firewalls.backups') }}" class="btn btn-ghost">Limpar</a>{% endif %}
+</form>
+
+<section class="card">
+  {% set show_firewall = true %}
+  {% set pager_args = {'firewall_id': firewall_id} if firewall_id else {} %}
+  {% include "firewalls/_backups_table.html" %}
+</section>
+{% endblock %}

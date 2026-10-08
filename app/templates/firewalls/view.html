@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ fw.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ fw.name }} {{ m.firewall_status(fw.status) }}</h1>
+    <p class="muted">{{ fw.vendor_label }}{% if fw.description %} · {{ fw.description }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('firewalls.edit', firewall_id=fw.id) }}" class="btn">Editar</a>
+    <a href="{{ url_for('firewalls.list') }}" class="btn">Voltar</a>
+  </div>
+</div>
+
+<div class="grid-2 cards-row">
+  <section class="card">
+    <h2>Dados para configurar no firewall</h2>
+    <dl class="info">
+      <dt>Servidor FTP</dt><dd class="mono">{{ ftp.host or 'IP-DESTE-SERVIDOR' }}</dd>
+      <dt>Porta</dt><dd class="mono">{{ ftp.port }}</dd>
+      <dt>Usuário</dt><dd class="mono">{{ fw.ftp_username }}</dd>
+      <dt>Senha</dt><dd>definida no cadastro <span class="muted">(não é exibida)</span></dd>
+      <dt>Diretório remoto</dt><dd class="mono">/</dd>
+      <dt>Modo</dt><dd>Passivo (portas {{ ftp.passive }})</dd>
+    </dl>
+    {% if fw.vendor == 'fortigate' %}
+    <p class="hint">Teste manual pela CLI do FortiGate:<br>
+      <code>execute backup config ftp {{ fw.dirname }}.conf {{ ftp.host or 'IP' }}{{ ':' ~ ftp.port if ftp.port != 21 }} {{ fw.ftp_username }} &lt;senha&gt;</code></p>
+    {% endif %}
+    {% if not ftp.host %}<p class="error-text small">FTP_PUBLIC_HOST não definido — veja Firewalls › Configurações.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Situação</h2>
+    <dl class="info">
+      <dt>Último backup</dt><dd>{{ fw.last_backup_at|localdt }}</dd>
+      <dt>Próximo esperado até</dt><dd>{{ fw.deadline|localdt if fw.deadline else 'não monitorado' }}</dd>
+      <dt>Último login FTP</dt><dd>{{ fw.last_login_at|localdt }}{% if fw.last_login_ip %} <span class="mono muted">de {{ fw.last_login_ip }}</span>{% endif %}</dd>
+      <dt>IPs permitidos</dt><dd class="mono">{{ fw.allowed_ips or 'qualquer' }}</dd>
+      <dt>Arquivos</dt><dd>{{ page.total }} · {{ total_size|filesize }}</dd>
+      <dt>Localização</dt><dd class="mono small">{{ location }}</dd>
+    </dl>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-header"><h2>Arquivos recebidos</h2></div>
+  {% include "firewalls/_backups_table.html" %}
+</section>
+{% endblock %}

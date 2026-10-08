@@ -11,10 +11,11 @@
     </p>
   </div>
   <form method="post" action="{{ url_for('switches.run_all') }}">
-    {{ m.csrf() }}<button type="submit" class="btn btn-primary" {{ 'disabled' if not stats.enabled }}>Executar backup agora</button>
+    {{ m.csrf() }}<button type="submit" class="btn btn-primary" {{ 'disabled' if not stats.enabled }}>Backup de todos os switches</button>
   </form>
 </div>
 
+<h2 class="module-title">Switches</h2>
 <div class="stats">
   <div class="stat">
     <span class="stat-label">Switches ativos</span>
@@ -58,8 +59,48 @@
   {% endif %}
 </section>
 
+<h2 class="module-title">Firewalls</h2>
+<div class="stats">
+  <div class="stat">
+    <span class="stat-label">Firewalls ativos</span>
+    <span class="stat-value">{{ fw_stats.enabled }}<small> / {{ fw_stats.total }}</small></span>
+  </div>
+  <div class="stat {{ 'stat-danger' if fw_stats.overdue else 'stat-ok' }}">
+    <span class="stat-label">Backup atrasado</span>
+    <span class="stat-value">{{ fw_stats.overdue }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Arquivos armazenados</span>
+    <span class="stat-value">{{ fw_stats.backups }}<small> · {{ fw_stats.storage|filesize }}</small></span>
+  </div>
+</div>
+
 <section class="card">
-  <div class="card-header"><h2>Atividade recente</h2><a href="{{ url_for('backups.list') }}" class="btn btn-sm">Ver todos</a></div>
+  <div class="card-header"><h2>Situação dos firewalls</h2><a href="{{ url_for('firewalls.create') }}" class="btn btn-sm">Cadastrar firewall</a></div>
+  {% if firewalls %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Nome</th><th>Fabricante</th><th>Status</th><th>Último backup recebido</th><th>Próximo esperado até</th></tr></thead>
+    <tbody>
+    {% for fw in firewalls %}
+      <tr class="{{ 'row-disabled' if not fw.enabled }}">
+        <td><a href="{{ url_for('firewalls.view', firewall_id=fw.id) }}">{{ fw.name }}</a></td>
+        <td>{{ fw.vendor_label }}</td>
+        <td>{{ m.firewall_status(fw.status) }}</td>
+        <td>{{ fw.last_backup_at|localdt }}</td>
+        <td>{{ fw.deadline|localdt('%d/%m/%Y %H:%M') if fw.deadline else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="empty">Nenhum firewall cadastrado. <a href="{{ url_for('firewalls.create') }}">Cadastre o primeiro</a>.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>Atividade recente dos switches</h2><a href="{{ url_for('backups.list') }}" class="btn btn-sm">Ver todos</a></div>
   {% if recent %}
   <div class="table-wrap">
   <table>

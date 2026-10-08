@@ -317,6 +317,137 @@ for path in ["/", "/switches/", "/switches/new", f"/switches/{sw_id}/edit", "/ba
 s, _, body = req(op, f"/switches/{sw_id}/edit")
 check("senhas nunca retornam ao formulário", b"cisco123" not in body and b"enable123" not in body)
 
+print("\n[12] Módulo Firewalls (FTP)")
+import ftplib
+import hashlib
+from datetime import datetime, timedelta, timezone
+
+FTP_HOST, FTP_PORT = "127.0.0.1", 2121
+FW_PASS = "FtpSenha#123"
+fw_form = {"name": "FW-MATRIZ", "vendor": "sonicwall", "description": "Matriz", "ftp_username": "fw-matriz",
+           "ftp_password": FW_PASS, "allowed_ips": "", "expected_hours": "24", "enabled": "on"}
+s, body = post(op, "/firewalls/new", fw_form, "/firewalls/new")
+check("firewall cadastrado", "FW-MATRIZ cadastrado" in body, body[:300])
+fw_id, fw_hash = q("select id, ftp_password_hash from firewalls where name='FW-MATRIZ'")[0]
+check("senha FTP gravada como hash Argon2id", fw_hash.startswith("$argon2id$") and FW_PASS not in fw_hash)
+s, body = post(op, "/firewalls/new", {**fw_form, "name": "FW-OUTRO"}, "/firewalls/new")
+check("usuário FTP duplicado rejeitado", "já está em uso" in body)
+s, body = post(op, "/firewalls/new", {**fw_form, "name": "FW-OUTRO", "ftp_username": "fw-outro", "allowed_ips": "abc"}, "/firewalls/new")
+check("IP de origem inválido rejeitado", "inválido" in body)
+s, body = post(op, "/firewalls/new", {**fw_form, "name": "FW-FILIAL", "vendor": "fortigate", "ftp_username": "fw-filial",
+                                      "allowed_ips": "10.99.99.0/24"}, "/firewalls/new")
+check("firewall com restrição de IP cadastrado", "FW-FILIAL cadastrado" in body)
+check("diretório criado com o nome do firewall", os.path.isdir("/data/firewalls/FW-MATRIZ"))
+
+
+def ftp_login(user, password):
+    ftp = ftplib.FTP()
+    ftp.connect(FTP_HOST, FTP_PORT, timeout=15)
+    ftp.login(user, password)
+    return ftp
+
+
+def ftp_refused(fn):
+    try:
+        fn()
+        return False
+    except ftplib.error_perm:
+        return True
+
+
+def fw_rows():
+    return q("select id, filename, size, sha256, original_name, remote_ip, changed from firewall_backups "
+             "where firewall_id=? order by created_at", fw_id)
+
+
+def upload(data, name="backup.exp"):
+    ftp = ftp_login("fw-matriz", FW_PASS)
+    ftp.storbinary(f"STOR {name}", io.BytesIO(data))
+    ftp.quit()
+    time.sleep(0.8)
+
+
+check("FTP: senha errada recusada", ftp_refused(lambda: ftp_login("fw-matriz", "errada")))
+check("FTP: IP fora da lista permitida recusado", ftp_refused(lambda: ftp_login("fw-filial", FW_PASS)))
+
+data1 = os.urandom(3 * 1024 * 1024)
+ftp = ftp_login("fw-matriz", FW_PASS)
+ftp.storbinary("STOR backup.exp", io.BytesIO(data1))
+check("FTP: não permite baixar arquivos (RETR)", ftp_refused(lambda: ftp.retrbinary("RETR backup.exp", lambda b: None)))
+check("FTP: não permite apagar (DELE)", ftp_refused(lambda: ftp.delete("qualquer.exp")))
+check("FTP: não permite criar diretório (MKD)", ftp_refused(lambda: ftp.mkd("sub")))
+try:
+    ftp.cwd("..")
+except ftplib.error_perm:
+    pass
+check("FTP: preso no próprio diretório (cd .. continua em /)", ftp.pwd() == "/")
+ftp.quit()
+time.sleep(0.8)
+
+rows = fw_rows()
+check("upload de 3 MB registrado", len(rows) == 1 and rows[0][2] == len(data1), rows)
+_, fname, _, sha, orig, rip, _ = rows[0]
+check("arquivo renomeado com data/hora (não sobrescreve)", fname.startswith("backup_") and fname.endswith(".exp") and orig == "backup.exp")
+check("hash SHA-256 correto", sha == hashlib.sha256(data1).hexdigest())
+check("IP de origem registrado", rip == "127.0.0.1")
+check("arquivo salvo no diretório do firewall", os.path.exists(f"/data/firewalls/FW-MATRIZ/{fname}"))
+s, h, body = req(op, f"/firewalls/backups/{rows[0][0]}/download")
+check("download pela web idêntico ao enviado", s == 200 and body == data1)
+
+upload(data1)
+upload(os.urandom(1024 * 1024))
+changed = [r[6] for r in fw_rows()]
+check("mesmo conteúdo não é marcado como alterado; conteúdo novo é", changed == [0, 0, 1], changed)
+
+for path in ["/firewalls/", f"/firewalls/{fw_id}", f"/firewalls/{fw_id}/edit", "/firewalls/backups",
+             f"/firewalls/backups?firewall_id={fw_id}", "/firewalls/settings", "/firewalls/new", "/"]:
+    s, _, _ = req(op, path)
+    check(f"GET {path} = 200", s == 200, s)
+_, _, body = req(op, "/firewalls/")
+check("status 'Em dia' na listagem", b"Em dia" in body)
+
+print("  -- atraso de backup")
+MAILS.clear()
+two_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=2)).replace(tzinfo=None).isoformat(" ")
+con = sqlite3.connect(DB)
+con.execute("update firewalls set expected_hours=1, last_backup_at=? where id=?", (two_hours_ago, fw_id))
+con.commit()
+con.close()
+time.sleep(6)
+check("alerta de backup não recebido enviado", any("firewall(s) não recebido" in m and "FW-MATRIZ" in m for m in MAILS),
+      [m[:120] for m in MAILS])
+check("alerta enviado só uma vez", sum("FW-MATRIZ" in m for m in MAILS) == 1 and
+      q("select overdue_alerted from firewalls where id=?", fw_id)[0][0] == 1)
+_, _, body = req(op, "/firewalls/")
+check("status 'Atrasado' na listagem", b"Atrasado" in body)
+upload(b"novo backup")
+check("novo envio normaliza o status", q("select overdue_alerted from firewalls where id=?", fw_id)[0][0] == 0)
+
+print("  -- retenção")
+s, body = post(op, "/firewalls/settings", {"fw_retention_days": "365", "fw_retention_max": "2"}, "/firewalls/settings")
+check("retenção do módulo salva", "salvas" in body)
+upload(b"mais um")
+rows = fw_rows()
+on_disk = os.listdir("/data/firewalls/FW-MATRIZ")
+check(f"retenção manteve 2 arquivos (banco={len(rows)}, disco={len(on_disk)})", len(rows) == 2 and len(on_disk) == 2)
+
+s, h, body = req(op, "/firewalls/backups/latest.zip")
+names = zipfile.ZipFile(io.BytesIO(body)).namelist() if s == 200 else []
+check("ZIP com o último arquivo de cada firewall", len(names) == 1 and names[0].startswith("FW-MATRIZ/"), names)
+
+print("  -- renomear e excluir")
+s, body = post(op, f"/firewalls/{fw_id}/edit", {**fw_form, "name": "FW-SP", "ftp_password": ""}, f"/firewalls/{fw_id}/edit")
+check("renomear firewall renomeia o diretório", os.path.isdir("/data/firewalls/FW-SP") and not os.path.exists("/data/firewalls/FW-MATRIZ"))
+check("senha FTP mantida ao editar sem informar", q("select ftp_password_hash from firewalls where id=?", fw_id)[0][0] == fw_hash)
+s, _, body = req(op, f"/firewalls/backups/{fw_rows()[-1][0]}/download")
+check("download continua funcionando após renomear", s == 200 and body == b"mais um")
+upload(b"depois de renomear")
+check("upload após renomear cai no novo diretório", any(f.startswith("backup_") for f in os.listdir("/data/firewalls/FW-SP")) and len(fw_rows()) == 2)
+s, body = post(op, f"/firewalls/{fw_id}/delete", {}, "/firewalls/")
+check("firewall excluído com seus arquivos", "removidos" in body and not os.path.exists("/data/firewalls/FW-SP")
+      and q("select count(*) from firewall_backups where firewall_id=?", fw_id)[0][0] == 0)
+check("usuário FTP de firewall excluído não entra mais", ftp_refused(lambda: ftp_login("fw-matriz", FW_PASS)))
+
 print("\n[11] Proteção de login")
 post(op, "/logout", {})
 s, h, _ = req(op, "/switches/")

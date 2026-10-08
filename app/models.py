@@ -119,6 +119,10 @@ class Settings(db.Model):
     alert_on_change = db.Column(db.Boolean, nullable=False, default=False)
     alert_stale_days = db.Column(db.Integer, nullable=False, default=2)
 
+    # Módulo firewalls
+    fw_retention_days = db.Column(db.Integer, nullable=False, default=365, server_default="365")
+    fw_retention_max = db.Column(db.Integer, nullable=False, default=30, server_default="30")
+
     last_run_at = db.Column(db.DateTime)
     last_run_summary = db.Column(db.String(255))
 

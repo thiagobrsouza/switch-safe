@@ -1,0 +1,39 @@
+{% import "_macros.html" as m with context %}
+{% set pargs = dict(request.view_args or {}) %}
+{% if pager_args is defined %}{% set _ = pargs.update(pager_args) %}{% endif %}
+{% if page.items %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Recebido em</th>{% if show_firewall %}<th>Firewall</th>{% endif %}<th>Arquivo</th><th>Tamanho</th><th>Origem</th><th>SHA-256</th><th class="actions-col">Ações</th></tr></thead>
+  <tbody>
+  {% for b in page.items %}
+    <tr>
+      <td>{{ b.created_at|localdt }}</td>
+      {% if show_firewall %}<td><a href="{{ url_for('firewalls.view', firewall_id=b.firewall_id) }}">{{ b.firewall.name }}</a></td>{% endif %}
+      <td>
+        <span class="mono">{{ b.filename }}</span>
+        {% if b.changed %}<span class="badge badge-info" title="Conteúdo diferente do arquivo anterior">alterado</span>{% endif %}
+        <div class="muted small mono">{{ b.firewall.dirname }}/</div>
+      </td>
+      <td>{{ b.size|filesize }}</td>
+      <td class="mono small">{{ b.remote_ip or '—' }}</td>
+      <td class="mono small" title="{{ b.sha256 }}">{{ (b.sha256 or '')[:12] }}…</td>
+      <td class="actions">
+        <a href="{{ url_for('firewalls.download', backup_id=b.id) }}" class="btn btn-sm btn-primary">Download</a>
+        {{ m.confirm_button(url_for('firewalls.delete_backup', backup_id=b.id), 'Excluir', 'Excluir o arquivo ' ~ b.filename ~ '?') }}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if page.pages > 1 %}
+<nav class="pagination">
+  {% if page.has_prev %}<a class="btn btn-sm" href="{{ url_for(request.endpoint, page=page.prev_num, **pargs) }}">← Anterior</a>{% endif %}
+  <span class="muted">Página {{ page.page }} de {{ page.pages }}</span>
+  {% if page.has_next %}<a class="btn btn-sm" href="{{ url_for(request.endpoint, page=page.next_num, **pargs) }}">Próxima →</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+  <p class="empty">Nenhum arquivo recebido ainda.</p>
+{% endif %}

@@ -47,10 +47,19 @@ def _manual_job(app, switch_ids, trigger):
 
 
 def _retention_job():
+    from .firewalls import storage as firewall_storage
     from .retention import apply_retention
 
     with _app.app_context():
         apply_retention()
+        firewall_storage.apply_retention()
+
+
+def _firewall_check_job():
+    from .firewalls import storage as firewall_storage
+
+    with _app.app_context():
+        firewall_storage.check_overdue()
 
 
 def init_scheduler(app):
@@ -71,6 +80,8 @@ def init_scheduler(app):
         apply_schedule(Settings.get())
     _scheduler.add_job(_retention_job, CronTrigger(hour=4, minute=30, timezone=get_tz()),
                        id="daily_retention", replace_existing=True)
+    _scheduler.add_job(_firewall_check_job, "interval", seconds=app.config["FIREWALL_CHECK_SECONDS"],
+                       id="firewall_overdue_check", replace_existing=True)
     log.info("Agendador iniciado (fuso %s).", get_tz())
 
 

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ 'Editar ' ~ fw.name if fw else 'Cadastrar firewall' }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ 'Editar ' ~ fw.name if fw else 'Cadastrar firewall' }}</h1>
+    <p class="muted">O firewall envia o backup por FTP para o Switch Safe usando o usuário abaixo.</p>
+  </div>
+  <a href="{{ url_for('firewalls.view', firewall_id=fw.id) if fw else url_for('firewalls.list') }}" class="btn">Voltar</a>
+</div>
+
+<form method="post" class="card form" autocomplete="off">
+  {{ m.csrf() }}
+  <h2>Identificação</h2>
+  <div class="grid-3">
+    <label>Nome *
+      <input type="text" name="name" value="{{ values.name or '' }}" required maxlength="100" placeholder="FW-MATRIZ">
+      <span class="hint">Também define o diretório onde os arquivos ficam.</span>
+    </label>
+    <label>Fabricante *
+      <select name="vendor">
+        {% for key, label in vendors.items() %}
+          <option value="{{ key }}" {{ 'selected' if values.vendor == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Descrição
+      <input type="text" name="description" value="{{ values.description or '' }}" maxlength="255" placeholder="Matriz - São Paulo">
+    </label>
+  </div>
+
+  <h2>Acesso FTP deste firewall</h2>
+  <div class="grid-2">
+    <label>Usuário FTP *
+      <input type="text" name="ftp_username" id="ftp_username" value="{{ values.ftp_username or '' }}" required maxlength="32" autocomplete="off">
+    </label>
+    <label>Senha FTP {{ '*' if not fw }}
+      <div class="input-group">
+        <input type="text" name="ftp_password" id="ftp_password" autocomplete="new-password" minlength="8" {{ 'required' if not fw }}
+               placeholder="{{ 'Deixe em branco para manter a atual' if fw else 'mínimo 8 caracteres' }}">
+        <button type="button" class="btn" id="gen_password">Gerar</button>
+      </div>
+      <span class="hint">Copie a senha agora: ela é guardada como hash e não poderá ser exibida depois.</span>
+    </label>
+  </div>
+  <label>IPs de origem permitidos <span class="muted">(opcional)</span>
+    <input type="text" name="allowed_ips" value="{{ values.allowed_ips or '' }}" placeholder="10.0.0.1, 192.168.10.0/24">
+    <span class="hint">Se preenchido, só aceita login FTP vindo desses IPs/redes. Recomendado.</span>
+  </label>
+
+  <h2>Monitoramento</h2>
+  <label class="inline-field">
+    Alertar se nenhum backup chegar em
+    <input type="number" name="expected_hours" value="{{ values.expected_hours }}" min="0" max="2160" class="input-sm">
+    hora(s) <span class="muted">(0 = não monitorar)</span>
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="enabled" {{ 'checked' if values.enabled }}>
+    Firewall ativo (desmarcado, o login FTP é recusado e não há alertas)
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Salvar</button>
+    <a href="{{ url_for('firewalls.list') }}" class="btn">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var name = document.querySelector('input[name=name]');
+  var user = document.getElementById('ftp_username');
+  var userTouched = !!user.value;
+  user.addEventListener('input', function () { userTouched = true; });
+  name.addEventListener('input', function () {
+    if (!userTouched) user.value = name.value.toLowerCase().replace(/[^a-z0-9_.-]+/g, '_').replace(/^[_.]+|[_.]+$/g, '').slice(0, 32);
+  });
+  document.getElementById('gen_password').addEventListener('click', function () {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    var bytes = new Uint32Array(20), out = '';
+    crypto.getRandomValues(bytes);
+    bytes.forEach(function (b) { out += chars[b % chars.length]; });
+    var input = document.getElementById('ftp_password');
+    input.value = out; input.select();
+  });
+})();
+</script>
+{% endblock %}
