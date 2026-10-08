@@ -10,6 +10,7 @@
   <a href="{{ url_for('firewalls.create') }}" class="btn btn-primary">Cadastrar firewall</a>
 </div>
 
+{% include "firewalls/_storage_warning.html" %}
 {% if not ftp.running %}
   <div class="flash flash-warning">O servidor FTP está desativado (FTP_ENABLED=false). Os firewalls não conseguirão enviar backups.</div>
 {% elif not ftp.host %}

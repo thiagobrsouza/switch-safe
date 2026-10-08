@@ -1,5 +1,6 @@
 import io
 import ipaddress
+import os
 import re
 import zipfile
 
@@ -33,6 +34,9 @@ def ftp_info():
         "host": cfg["FTP_PUBLIC_HOST"],
         "port": cfg["FTP_PORT"],
         "passive": cfg["FTP_PASSIVE_PORTS"],
+        "writable": storage.root_writable(),
+        "root": storage.firewalls_root(),
+        "uid": os.getuid(),
     }
 
 
@@ -133,7 +137,8 @@ def create():
         if not errors:
             db.session.add(fw)
             db.session.commit()
-            storage.firewall_dir(fw).mkdir(parents=True, exist_ok=True)
+            if not storage.ensure_firewall_dir(fw):
+                flash("Atenção: sem permissão de escrita na pasta dos firewalls; o envio por FTP vai falhar.", "error")
             flash(f"Firewall {fw.name} cadastrado. Configure o backup FTP no equipamento com os dados abaixo.", "success")
             return redirect(url_for("firewalls.view", firewall_id=fw.id))
         for e in errors:

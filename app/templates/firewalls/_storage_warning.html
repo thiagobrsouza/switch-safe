@@ -1,0 +1,7 @@
+{% if not ftp.writable %}
+  <div class="flash flash-error">
+    Sem permissão de escrita em <code>{{ ftp.root }}</code> — os firewalls não conseguirão enviar backups.
+    No servidor, ajuste o dono da pasta para o UID {{ ftp.uid }}:
+    <code>sudo chown -R {{ ftp.uid }}:{{ ftp.uid }} &lt;pasta do FIREWALL_BACKUP_PATH&gt;</code>
+  </div>
+{% endif %}

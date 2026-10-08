@@ -9,9 +9,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# As pastas são criadas com o dono certo para que volumes novos montados nelas herdem essa permissão.
 RUN useradd --system --uid 1000 --no-create-home switchsafe \
-    && mkdir -p /data \
-    && chown switchsafe:switchsafe /data
+    && mkdir -p /data/backups /data/firewalls /data/keys \
+    && chown -R switchsafe:switchsafe /data
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt

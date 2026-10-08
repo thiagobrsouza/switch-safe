@@ -14,6 +14,7 @@ services:
       FIREWALL_CHECK_SECONDS: "3"
     volumes:
       - testdata:/data
+      - fwdata:/data/firewalls  # como em produção: volume separado para os firewalls
 
   fake-switch:
     image: switch-safe:latest
@@ -45,8 +46,10 @@ services:
     volumes:
       - ./:/tests:ro
       - testdata:/data
+      - fwdata:/data/firewalls  # como em produção: volume separado para os firewalls
       - scratch:/scratch
 
 volumes:
   testdata:
+  fwdata:
   scratch:

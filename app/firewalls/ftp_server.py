@@ -74,7 +74,8 @@ class FirewallAuthorizer(DummyAuthorizer):
             if not fw.ip_allowed(ip):
                 self._fail(ip, username, f"IP {ip} não autorizado")
             home = storage.firewall_dir(fw)
-            home.mkdir(parents=True, exist_ok=True)
+            if not storage.ensure_firewall_dir(fw):
+                raise AuthenticationFailed("Server storage not writable. Contact the administrator.")
             fw.last_login_at = utcnow()
             fw.last_login_ip = ip
             db.session.commit()
@@ -132,6 +133,11 @@ def start_ftp_server(app):
         handler.masquerade_address = _resolve(cfg["FTP_PUBLIC_HOST"])
     else:
         log.warning("FTP: FTP_PUBLIC_HOST não definido; o modo passivo pode não funcionar através do Docker.")
+
+    root = Path(cfg["FIREWALL_DIR"])
+    if not storage.root_writable(root):
+        log.error("FTP: a pasta %s não tem permissão de escrita para o UID %d — os firewalls não conseguirão "
+                  "enviar backups. Corrija com: chown -R %d:%d <pasta do host>", root, os.getuid(), os.getuid(), os.getuid())
 
     logging.getLogger("pyftpdlib").setLevel(logging.WARNING)
     _server = FTPServer(("0.0.0.0", cfg["FTP_LISTEN_PORT"]), handler)

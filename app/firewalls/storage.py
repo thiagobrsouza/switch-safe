@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import os
 import shutil
 from datetime import timedelta
 from pathlib import Path
@@ -19,6 +20,22 @@ def firewalls_root() -> Path:
 
 def firewall_dir(fw: Firewall) -> Path:
     return firewalls_root() / fw.dirname
+
+
+def root_writable(root: Path | None = None) -> bool:
+    root = root or firewalls_root()
+    return root.is_dir() and os.access(root, os.W_OK | os.X_OK)
+
+
+def ensure_firewall_dir(fw: Firewall) -> bool:
+    """Cria o diretório do firewall. Retorna False (e registra o erro) se não houver permissão."""
+    try:
+        firewall_dir(fw).mkdir(parents=True, exist_ok=True)
+        return True
+    except OSError as exc:
+        log.error("Sem permissão para criar %s (%s). A pasta dos firewalls deve pertencer ao UID %d.",
+                  firewall_dir(fw), exc, os.getuid())
+        return False
 
 
 def backup_file(backup: FirewallBackup) -> Path | None:
