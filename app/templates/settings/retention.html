@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Agendamento e retenção{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Agendamento e retenção</h1>
+    <p class="muted">Próxima execução: {{ next_run|localdt if next_run else 'agendamento desativado' }}</p>
+  </div>
+</div>
+
+<form method="post" class="card form">
+  {{ m.csrf() }}
+  <h2>Agendamento</h2>
+  <label class="checkbox">
+    <input type="checkbox" name="schedule_enabled" {{ 'checked' if settings.schedule_enabled }}>
+    Executar backup automático de todos os switches ativos
+  </label>
+  <label>Expressão cron (minuto hora dia mês dia-da-semana)
+    <input type="text" name="schedule_cron" id="schedule_cron" value="{{ settings.schedule_cron }}" class="mono" required>
+  </label>
+  <div class="presets">
+    <span class="muted small">Atalhos:</span>
+    <button type="button" class="btn btn-sm" data-cron="0 2 * * *">Diário 02:00</button>
+    <button type="button" class="btn btn-sm" data-cron="0 2,14 * * *">2x ao dia (02h e 14h)</button>
+    <button type="button" class="btn btn-sm" data-cron="0 */6 * * *">A cada 6 horas</button>
+    <button type="button" class="btn btn-sm" data-cron="0 3 * * 0">Semanal (domingo 03:00)</button>
+    <button type="button" class="btn btn-sm" data-cron="0 2 * * 1-5">Dias úteis 02:00</button>
+  </div>
+  <p class="hint">Horários no fuso do servidor. Dia da semana: 0 ou 7 = domingo, 1 = segunda… 6 = sábado.</p>
+
+  <h2>Retenção de dados</h2>
+  <div class="grid-2">
+    <label>Manter backups por (dias)
+      <input type="number" name="retention_days" value="{{ settings.retention_days }}" min="0" max="3650" required>
+      <span class="hint">Backups mais antigos que isso são apagados. 0 = sem limite de tempo.</span>
+    </label>
+    <label>Quantidade máxima por switch
+      <input type="number" name="retention_max_per_switch" value="{{ settings.retention_max_per_switch }}" min="0" max="10000" required>
+      <span class="hint">Mantém só os N backups mais recentes de cada switch. 0 = sem limite.</span>
+    </label>
+  </div>
+  <p class="notice">
+    A retenção é aplicada após cada execução e diariamente às 04:30.
+    O <strong>backup bem-sucedido mais recente de cada switch nunca é apagado</strong>, mesmo que seja mais antigo que o limite.
+  </p>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Salvar</button>
+  </div>
+</form>
+
+<form method="post" action="{{ url_for('settings.retention_apply') }}" class="card"
+      onsubmit="return confirm('Aplicar a política de retenção agora? Os backups fora da política serão apagados.');">
+  {{ m.csrf() }}
+  <div class="card-header">
+    <div>
+      <h2>Aplicar retenção agora</h2>
+      <p class="muted">Remove imediatamente os backups que estão fora da política salva.</p>
+    </div>
+    <button type="submit" class="btn btn-danger">Aplicar agora</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-cron]').forEach(function (btn) {
+  btn.addEventListener('click', function () { document.getElementById('schedule_cron').value = btn.dataset.cron; });
+});
+</script>
+{% endblock %}

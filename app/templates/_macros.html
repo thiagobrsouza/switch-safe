@@ -1,0 +1,18 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro status_badge(status) %}
+  {%- if status == 'success' -%}<span class="badge badge-ok">Sucesso</span>
+  {%- elif status == 'failed' -%}<span class="badge badge-fail">Falha</span>
+  {%- else -%}<span class="badge badge-muted">Sem backup</span>
+  {%- endif -%}
+{% endmacro %}
+
+{% macro trigger_label(trigger) %}
+  {%- if trigger == 'agendado' -%}Agendado{%- else -%}Manual{%- endif -%}
+{% endmacro %}
+
+{% macro confirm_button(action, label, message, cls='btn btn-sm btn-danger') %}
+<form method="post" action="{{ action }}" class="inline" onsubmit="return confirm({{ message|tojson|forceescape }});">
+  {{ csrf() }}<button type="submit" class="{{ cls }}">{{ label }}</button>
+</form>
+{% endmacro %}

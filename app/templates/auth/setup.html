@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Configuração inicial{% endblock %}
+{% block auth %}
+<p class="notice">Primeiro acesso: crie o usuário administrador.</p>
+<form method="post" class="form">
+  {{ m.csrf() }}
+  <label>Usuário
+    <input type="text" name="username" value="admin" autocomplete="username" required minlength="3" maxlength="64">
+  </label>
+  <label>Senha <span class="muted">(mínimo 8 caracteres)</span>
+    <input type="password" name="password" autocomplete="new-password" required minlength="8">
+  </label>
+  <label>Confirmar senha
+    <input type="password" name="confirm" autocomplete="new-password" required minlength="8">
+  </label>
+  <button type="submit" class="btn btn-primary btn-block">Criar administrador</button>
+</form>
+{% endblock %}

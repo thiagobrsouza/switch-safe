@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Entrar{% endblock %}
+{% block auth %}
+<form method="post" class="form">
+  {{ m.csrf() }}
+  <label>Usuário
+    <input type="text" name="username" autocomplete="username" required autofocus>
+  </label>
+  <label>Senha
+    <input type="password" name="password" autocomplete="current-password" required>
+  </label>
+  <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+</form>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ 'Editar ' ~ sw.name if sw else 'Cadastrar switch' }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ 'Editar ' ~ sw.name if sw else 'Cadastrar switch' }}</h1>
+    <p class="muted">As senhas são armazenadas criptografadas e nunca são exibidas novamente.</p>
+  </div>
+  <a href="{{ url_for('switches.list') }}" class="btn">Voltar</a>
+</div>
+
+<form method="post" class="card form" autocomplete="off">
+  {{ m.csrf() }}
+  <h2>Identificação</h2>
+  <div class="grid-2">
+    <label>Nome *
+      <input type="text" name="name" value="{{ values.name or '' }}" required maxlength="100" placeholder="SW-CORE-01">
+    </label>
+    <label>Descrição
+      <input type="text" name="description" value="{{ values.description or '' }}" maxlength="255" placeholder="Rack 2 - Datacenter">
+    </label>
+  </div>
+
+  <h2>Conexão</h2>
+  <div class="grid-3">
+    <label>Tipo de equipamento *
+      <select name="device_type" id="device_type" required>
+        {% for key, dt in device_types.items() %}
+          <option value="{{ key }}" data-port="{{ dt.port }}" data-command="{{ dt.command }}" {{ 'selected' if values.device_type == key }}>{{ dt.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>IP / Hostname *
+      <input type="text" name="host" value="{{ values.host or '' }}" required maxlength="255" placeholder="10.0.0.1">
+    </label>
+    <label>Porta
+      <input type="number" name="port" id="port" value="{{ values.port or '' }}" min="1" max="65535" placeholder="22">
+    </label>
+  </div>
+
+  <h2>Credenciais</h2>
+  <div class="grid-2">
+    <label>Usuário *
+      <input type="text" name="username" value="{{ values.username or '' }}" required maxlength="100" autocomplete="off">
+    </label>
+    <label>Senha {{ '*' if not sw }}
+      <input type="password" name="password" autocomplete="new-password" {{ 'required' if not sw }}
+             placeholder="{{ 'Deixe em branco para manter a atual' if sw else '' }}">
+    </label>
+  </div>
+
+  <label class="checkbox">
+    <input type="checkbox" name="requires_enable" id="requires_enable" {{ 'checked' if values.requires_enable }}>
+    Este switch exige senha de <strong>enable</strong> (modo privilegiado)
+  </label>
+  <div id="enable_block" class="indent">
+    <label>Senha de enable
+      <input type="password" name="enable_password" autocomplete="new-password"
+             placeholder="{{ 'Deixe em branco para manter a atual' if sw and sw.requires_enable else '' }}">
+    </label>
+  </div>
+
+  <h2>Backup</h2>
+  <label>Comando de backup
+    <input type="text" name="command" id="command" value="{{ values.command or '' }}" maxlength="255">
+    <span class="hint">Deixe em branco para usar o padrão do tipo de equipamento.</span>
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="enabled" {{ 'checked' if values.enabled }}>
+    Incluir este switch no backup agendado
+  </label>
+  {% if not sw %}
+  <label class="checkbox">
+    <input type="checkbox" name="run_now" checked>
+    Executar o primeiro backup logo após salvar
+  </label>
+  {% endif %}
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Salvar</button>
+    <a href="{{ url_for('switches.list') }}" class="btn">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var type = document.getElementById('device_type');
+  var port = document.getElementById('port');
+  var command = document.getElementById('command');
+  var enable = document.getElementById('requires_enable');
+  var enableBlock = document.getElementById('enable_block');
+  function syncType() {
+    var opt = type.options[type.selectedIndex];
+    port.placeholder = opt.dataset.port;
+    command.placeholder = 'Padrão: ' + opt.dataset.command;
+  }
+  function syncEnable() { enableBlock.hidden = !enable.checked; }
+  type.addEventListener('change', syncType);
+  enable.addEventListener('change', syncEnable);
+  syncType(); syncEnable();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+# Ambiente isolado para o teste ponta a ponta (não toca nos dados reais).
+# Uso: bash tests/run_e2e.sh
+name: switch-safe-test
+
+services:
+  app:
+    build: ..
+    image: switch-safe:latest
+    environment:
+      TZ: America/Sao_Paulo
+      APP_PORT: "8080"
+    volumes:
+      - testdata:/data
+
+  fake-switch:
+    image: switch-safe:latest
+    user: "0"
+    entrypoint: ["python", "/tests/fake_switch.py"]
+    healthcheck:
+      disable: true
+    environment:
+      FAKE_EXTRA_FILE: /scratch/extra.txt
+    volumes:
+      - ./:/tests:ro
+      - scratch:/scratch
+
+  tester:
+    image: switch-safe:latest
+    user: "0"
+    entrypoint: ["python", "/tests/e2e.py"]
+    healthcheck:
+      disable: true
+    network_mode: "service:app"
+    depends_on:
+      app:
+        condition: service_healthy
+      fake-switch:
+        condition: service_started
+    environment:
+      FAKE_EXTRA_FILE: /scratch/extra.txt
+      FAKE_HOST: fake-switch
+    volumes:
+      - ./:/tests:ro
+      - testdata:/data
+      - scratch:/scratch
+
+volumes:
+  testdata:
+  scratch:

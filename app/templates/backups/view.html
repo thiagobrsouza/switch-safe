@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Backup {{ backup.switch.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ backup.switch.name }}</h1>
+    <p class="muted">
+      {{ backup.created_at|localdt }} · {{ backup.size|filesize }} · {{ m.trigger_label(backup.trigger) }}
+      {% if backup.changed %}· <span class="badge badge-info">alterado</span>{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('backups.download', backup_id=backup.id) }}" class="btn btn-primary">Download</a>
+    <a href="{{ url_for('backups.diff', backup_id=backup.id) }}" class="btn">Comparar com anterior</a>
+    <a href="{{ url_for('backups.list', switch_id=backup.switch_id) }}" class="btn">Voltar</a>
+  </div>
+</div>
+<section class="card">
+  <pre class="config">{{ content }}</pre>
+</section>
+{% endblock %}

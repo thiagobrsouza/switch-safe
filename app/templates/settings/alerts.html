@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Alertas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Alertas por e-mail (SMTP)</h1>
+    <p class="muted">Receba avisos de falhas e eventos de backup.</p>
+  </div>
+  <form method="post" action="{{ url_for('settings.alerts_test') }}">
+    {{ m.csrf() }}<button type="submit" class="btn" {{ 'disabled' if not settings.smtp_host }}>Enviar e-mail de teste</button>
+  </form>
+</div>
+
+<form method="post" class="card form" autocomplete="off">
+  {{ m.csrf() }}
+  <label class="checkbox">
+    <input type="checkbox" name="smtp_enabled" {{ 'checked' if settings.smtp_enabled }}>
+    <strong>Ativar alertas por e-mail</strong>
+  </label>
+
+  <h2>Servidor SMTP</h2>
+  <div class="grid-3">
+    <label>Servidor
+      <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}" placeholder="smtp.empresa.com.br">
+    </label>
+    <label>Porta
+      <input type="number" name="smtp_port" value="{{ settings.smtp_port }}" min="1" max="65535" required>
+    </label>
+    <label>Segurança
+      <select name="smtp_security">
+        <option value="starttls" {{ 'selected' if settings.smtp_security == 'starttls' }}>STARTTLS (587)</option>
+        <option value="ssl" {{ 'selected' if settings.smtp_security == 'ssl' }}>SSL/TLS (465)</option>
+        <option value="none" {{ 'selected' if settings.smtp_security == 'none' }}>Nenhuma (25)</option>
+      </select>
+    </label>
+  </div>
+  <label class="checkbox">
+    <input type="checkbox" name="smtp_verify_tls" {{ 'checked' if settings.smtp_verify_tls }}>
+    Validar certificado TLS do servidor (desmarque apenas para relays internos com certificado próprio)
+  </label>
+  <div class="grid-2">
+    <label>Usuário <span class="muted">(opcional)</span>
+      <input type="text" name="smtp_username" value="{{ settings.smtp_username or '' }}" autocomplete="off">
+    </label>
+    <label>Senha <span class="muted">{{ '(salva — deixe em branco para manter)' if settings.smtp_password_enc else '(opcional)' }}</span>
+      <input type="password" name="smtp_password" autocomplete="new-password">
+    </label>
+  </div>
+  {% if settings.smtp_password_enc %}
+  <label class="checkbox">
+    <input type="checkbox" name="smtp_password_clear"> Remover a senha salva
+  </label>
+  {% endif %}
+
+  <h2>Mensagem</h2>
+  <div class="grid-2">
+    <label>Remetente (From)
+      <input type="text" name="smtp_from" value="{{ settings.smtp_from or '' }}" placeholder="switch-safe@empresa.com.br">
+    </label>
+    <label>Destinatários
+      <input type="text" name="smtp_recipients" value="{{ settings.smtp_recipients or '' }}" placeholder="noc@empresa.com.br, infra@empresa.com.br">
+      <span class="hint">Separe vários e-mails por vírgula.</span>
+    </label>
+  </div>
+
+  <h2>Quando enviar</h2>
+  <label class="checkbox">
+    <input type="checkbox" name="alert_on_failure" {{ 'checked' if settings.alert_on_failure }}>
+    Falha no backup de qualquer switch
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="alert_on_change" {{ 'checked' if settings.alert_on_change }}>
+    Configuração de um switch alterada desde o backup anterior
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="alert_on_success" {{ 'checked' if settings.alert_on_success }}>
+    Resumo de cada execução concluída com sucesso
+  </label>
+  <label class="inline-field">
+    Alertar quando um switch ficar sem backup bem-sucedido por
+    <input type="number" name="alert_stale_days" value="{{ settings.alert_stale_days }}" min="0" max="365" class="input-sm">
+    dia(s) <span class="muted">(0 = desativado)</span>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Salvar</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Comparação {{ backup.switch.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Comparação · {{ backup.switch.name }}</h1>
+    <p class="muted">
+      {% if previous %}{{ previous.created_at|localdt }} → {{ backup.created_at|localdt }}
+      {% else %}{{ backup.created_at|localdt }}{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('backups.view', backup_id=backup.id) }}" class="btn">Ver backup</a>
+    <a href="{{ url_for('backups.list', switch_id=backup.switch_id) }}" class="btn">Voltar</a>
+  </div>
+</div>
+<section class="card">
+  {% if not previous %}
+    <p class="empty">Este é o primeiro backup deste switch — não há versão anterior para comparar.</p>
+  {% elif lines is none %}
+    <p class="empty">O arquivo do backup anterior não está mais disponível.</p>
+  {% elif not lines %}
+    <p class="empty">Nenhuma diferença entre os dois backups.</p>
+  {% else %}
+    <div class="diff">
+      {%- for line in lines %}
+        {%- if line.startswith('+++') or line.startswith('---') %}{% set cls = 'd-head' %}
+        {%- elif line.startswith('@@') %}{% set cls = 'd-hunk' %}
+        {%- elif line.startswith('+') %}{% set cls = 'd-add' %}
+        {%- elif line.startswith('-') %}{% set cls = 'd-del' %}
+        {%- else %}{% set cls = '' %}{% endif %}
+        <span class="{{ cls }}">{{ line }}</span>
+      {%- endfor %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

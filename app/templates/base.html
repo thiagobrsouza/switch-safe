@@ -1,0 +1,71 @@
+{% import "_macros.html" as m with context %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · Switch Safe</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ app_version }}">
+</head>
+<body>
+{% macro flashes() %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+{% endmacro %}
+
+{% if current_user.is_authenticated %}
+  {% set ep = request.endpoint or '' %}
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('main.dashboard') }}">
+        <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="28" height="28">
+        <span>Switch Safe</span>
+      </a>
+      <nav>
+        <a href="{{ url_for('main.dashboard') }}" class="{{ 'active' if ep == 'main.dashboard' }}">Painel</a>
+        <div class="nav-section">Switches</div>
+        <a href="{{ url_for('switches.list') }}" class="{{ 'active' if ep in ['switches.list', 'switches.edit'] }}">Switches monitorados</a>
+        <a href="{{ url_for('switches.create') }}" class="{{ 'active' if ep == 'switches.create' }}">Cadastrar switch</a>
+        <a href="{{ url_for('backups.list') }}" class="{{ 'active' if ep.startswith('backups.') }}">Backups</a>
+        <div class="nav-section">Configurações</div>
+        <a href="{{ url_for('settings.retention') }}" class="{{ 'active' if ep == 'settings.retention' }}">Agendamento e retenção</a>
+        <a href="{{ url_for('settings.alerts') }}" class="{{ 'active' if ep == 'settings.alerts' }}">Alertas (SMTP)</a>
+        <a href="{{ url_for('users.list') }}" class="{{ 'active' if ep == 'users.list' }}">Usuários</a>
+      </nav>
+      <div class="sidebar-footer">
+        <span class="muted">Conectado como <strong>{{ current_user.username }}</strong></span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          {{ m.csrf() }}<button type="submit" class="btn btn-sm btn-ghost">Sair</button>
+        </form>
+        <span class="muted small">v{{ app_version }}</span>
+      </div>
+    </aside>
+    <main class="content">
+      {{ flashes() }}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+{% else %}
+  <main class="auth">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="44" height="44">
+        <h1>Switch Safe</h1>
+        <p class="muted">Backup de configuração de switches</p>
+      </div>
+      {{ flashes() }}
+      {% block auth %}{% endblock %}
+    </div>
+  </main>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

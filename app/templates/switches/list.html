@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Switches{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Switches monitorados</h1>
+    <p class="muted">{{ switches|length }} switch(es) cadastrado(s)</p>
+  </div>
+  <a href="{{ url_for('switches.create') }}" class="btn btn-primary">Cadastrar switch</a>
+</div>
+
+<section class="card">
+  {% if switches %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Nome</th><th>Endereço</th><th>Tipo</th><th>Enable</th><th>Último backup</th><th>Backups</th><th class="actions-col">Ações</th></tr>
+    </thead>
+    <tbody>
+    {% for sw in switches %}
+      <tr class="{{ 'row-disabled' if not sw.enabled }}">
+        <td>
+          <strong>{{ sw.name }}</strong>
+          {% if not sw.enabled %}<span class="badge badge-muted">inativo</span>{% endif %}
+          {% if sw.description %}<div class="muted small">{{ sw.description }}</div>{% endif %}
+        </td>
+        <td class="mono">{{ sw.host }}:{{ sw.port }}</td>
+        <td>{{ sw.device_label }}</td>
+        <td>{{ 'Sim' if sw.requires_enable else 'Não' }}</td>
+        <td>
+          {{ m.status_badge(sw.last_status) }}
+          <div class="muted small">{{ sw.last_backup_at|localdt }}</div>
+          {% if sw.last_status == 'failed' and sw.last_error %}<div class="error-text small" title="{{ sw.last_error }}">{{ sw.last_error }}</div>{% endif %}
+        </td>
+        <td><a href="{{ url_for('backups.list', switch_id=sw.id) }}">{{ counts.get(sw.id, 0) }}</a></td>
+        <td class="actions">
+          <form method="post" action="{{ url_for('switches.run', switch_id=sw.id) }}" class="inline">
+            {{ m.csrf() }}<button type="submit" class="btn btn-sm btn-primary">Backup agora</button>
+          </form>
+          <a href="{{ url_for('switches.edit', switch_id=sw.id) }}" class="btn btn-sm">Editar</a>
+          {{ m.confirm_button(url_for('switches.delete', switch_id=sw.id), 'Excluir',
+               'Excluir o switch ' ~ sw.name ~ ' e TODOS os seus backups? Esta ação não pode ser desfeita.') }}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="empty">Nenhum switch cadastrado. <a href="{{ url_for('switches.create') }}">Cadastre o primeiro</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

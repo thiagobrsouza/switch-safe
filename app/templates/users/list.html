@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Usuários{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Usuários</h1>
+    <p class="muted">Pessoas com acesso ao Switch Safe. Senhas são armazenadas apenas como hash Argon2.</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Usuário</th><th>Criado em</th><th>Último login</th><th class="actions-col">Ações</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username }}</strong>{% if u.id == current_user.id %} <span class="badge badge-info">você</span>{% endif %}</td>
+        <td>{{ u.created_at|localdt }}</td>
+        <td>{{ u.last_login_at|localdt }}</td>
+        <td class="actions">
+          <details class="dropdown">
+            <summary class="btn btn-sm">Alterar senha</summary>
+            <form method="post" action="{{ url_for('users.change_password', user_id=u.id) }}" class="form dropdown-panel">
+              {{ m.csrf() }}
+              {% if u.id == current_user.id %}
+              <input type="password" name="current_password" placeholder="Senha atual" autocomplete="current-password" required>
+              {% endif %}
+              <input type="password" name="password" placeholder="Nova senha" autocomplete="new-password" required minlength="8">
+              <input type="password" name="confirm" placeholder="Confirmar nova senha" autocomplete="new-password" required minlength="8">
+              <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+            </form>
+          </details>
+          {% if users|length > 1 %}
+            {{ m.confirm_button(url_for('users.delete', user_id=u.id), 'Excluir', 'Excluir o usuário ' ~ u.username ~ '?') }}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<form method="post" action="{{ url_for('users.create') }}" class="card form" autocomplete="off">
+  {{ m.csrf() }}
+  <h2>Novo usuário</h2>
+  <div class="grid-3">
+    <label>Usuário
+      <input type="text" name="username" required minlength="3" maxlength="64" autocomplete="off">
+    </label>
+    <label>Senha
+      <input type="password" name="password" required minlength="8" autocomplete="new-password">
+    </label>
+    <label>Confirmar senha
+      <input type="password" name="confirm" required minlength="8" autocomplete="new-password">
+    </label>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Criar usuário</button>
+  </div>
+</form>
+{% endblock %}

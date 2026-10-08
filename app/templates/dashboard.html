@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Painel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Painel</h1>
+    <p class="muted">
+      Última execução: {{ settings.last_run_at|localdt if settings.last_run_at else 'nunca' }}
+      {% if settings.last_run_summary %}· {{ settings.last_run_summary }}{% endif %}
+    </p>
+  </div>
+  <form method="post" action="{{ url_for('switches.run_all') }}">
+    {{ m.csrf() }}<button type="submit" class="btn btn-primary" {{ 'disabled' if not stats.enabled }}>Executar backup agora</button>
+  </form>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-label">Switches ativos</span>
+    <span class="stat-value">{{ stats.enabled }}<small> / {{ stats.total }}</small></span>
+  </div>
+  <div class="stat {{ 'stat-danger' if stats.failing else 'stat-ok' }}">
+    <span class="stat-label">Com falha no último backup</span>
+    <span class="stat-value">{{ stats.failing }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Backups armazenados</span>
+    <span class="stat-value">{{ stats.backups }}<small> · {{ stats.storage|filesize }}</small></span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Próxima execução</span>
+    <span class="stat-value stat-value-sm">{{ next_run|localdt('%d/%m %H:%M') if next_run else 'Agendamento desativado' }}</span>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-header"><h2>Situação dos switches</h2><a href="{{ url_for('switches.create') }}" class="btn btn-sm">Cadastrar switch</a></div>
+  {% if switches %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Nome</th><th>Endereço</th><th>Status</th><th>Último sucesso</th><th>Último erro</th></tr></thead>
+    <tbody>
+    {% for sw in switches %}
+      <tr class="{{ 'row-disabled' if not sw.enabled }}">
+        <td><a href="{{ url_for('backups.list', switch_id=sw.id) }}">{{ sw.name }}</a>{% if not sw.enabled %} <span class="badge badge-muted">inativo</span>{% endif %}</td>
+        <td class="mono">{{ sw.host }}</td>
+        <td>{{ m.status_badge(sw.last_status) }}</td>
+        <td>{{ sw.last_success_at|localdt }}</td>
+        <td><span class="error-text" title="{{ sw.last_error or '' }}">{{ sw.last_error or '' }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="empty">Nenhum switch cadastrado. <a href="{{ url_for('switches.create') }}">Cadastre o primeiro</a>.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>Atividade recente</h2><a href="{{ url_for('backups.list') }}" class="btn btn-sm">Ver todos</a></div>
+  {% if recent %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Data</th><th>Switch</th><th>Status</th><th>Origem</th><th>Detalhe</th></tr></thead>
+    <tbody>
+    {% for b in recent %}
+      <tr>
+        <td>{{ b.created_at|localdt }}</td>
+        <td>{{ b.switch.name }}</td>
+        <td>{{ m.status_badge(b.status) }}{% if b.changed %} <span class="badge badge-info">alterado</span>{% endif %}</td>
+        <td>{{ m.trigger_label(b.trigger) }}</td>
+        <td>
+          {% if b.status == 'success' %}<a href="{{ url_for('backups.view', backup_id=b.id) }}">{{ b.size|filesize }}</a>
+          {% else %}<span class="error-text" title="{{ b.error }}">{{ b.error }}</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="empty">Nenhum backup executado ainda.</p>
+  {% endif %}
+</section>
+{% endblock %}

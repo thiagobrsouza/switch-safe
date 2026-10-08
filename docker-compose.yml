@@ -1,0 +1,42 @@
+services:
+  switch-safe:
+    build: .
+    image: switch-safe:latest
+    container_name: switch-safe
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:${APP_PORT:-8080}"
+    environment:
+      APP_PORT: ${APP_PORT:-8080}
+      TZ: ${TZ:-America/Sao_Paulo}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      BACKUP_WORKERS: ${BACKUP_WORKERS:-4}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Opcional: fornecer a chave de criptografia por variável em vez do arquivo em /data/keys
+      # SWITCHSAFE_ENCRYPTION_KEY: ${SWITCHSAFE_ENCRYPTION_KEY}
+    volumes:
+      - switchsafe-data:/data
+
+  # Switch Cisco simulado para demonstração. Só sobe com: docker compose --profile demo up -d
+  # Credenciais: admin / cisco123, enable: enable123 (ver tests/fake_switch.py)
+  fake-switch:
+    profiles: ["demo"]
+    image: switch-safe:latest
+    container_name: switch-safe-fake-switch
+    user: "0"
+    entrypoint: ["python", "/tests/fake_switch.py"]
+    healthcheck:
+      disable: true
+    depends_on:
+      - switch-safe
+    ports:
+      - "2201:2201"
+      - "2202:2202"
+    volumes:
+      - ./tests:/tests:ro
+      - fake-switch-state:/state
+
+volumes:
+  switchsafe-data:
+  fake-switch-state:
