@@ -24,6 +24,9 @@ services:
       # SWITCHSAFE_ENCRYPTION_KEY: ${SWITCHSAFE_ENCRYPTION_KEY}
     volumes:
       - switchsafe-data:/data
+      # Arquivos dos firewalls: volume Docker por padrão, ou um caminho do host definido em
+      # FIREWALL_BACKUP_PATH no .env (ex.: /mnt/fw-backup/switch-safe). A pasta deve pertencer ao UID 1000.
+      - ${FIREWALL_BACKUP_PATH:-switchsafe-firewalls}:/data/firewalls
 
   # Switch Cisco simulado para demonstração. Só sobe com: docker compose --profile demo up -d
   # Credenciais: admin / cisco123, enable: enable123 (ver tests/fake_switch.py)
@@ -46,4 +49,5 @@ services:
 
 volumes:
   switchsafe-data:
+  switchsafe-firewalls:
   fake-switch-state:

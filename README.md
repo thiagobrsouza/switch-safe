@@ -35,6 +35,55 @@ pede a criação do usuário administrador — faça isso logo após subir o con
 
 Logs: `docker compose logs -f switch-safe`
 
+## Instalação em servidor (produção)
+
+A imagem `switch-safe:latest` **não vem de um registro**: o `docker compose` a constrói a partir do código
+do repositório (`build: .`) e só dá esse nome a ela. Por isso o servidor precisa do código.
+
+```bash
+# 1. Docker + plugin compose (Debian/Ubuntu; em outras distros veja docs.docker.com)
+curl -fsSL https://get.docker.com | sudo sh
+
+# 2. Código
+sudo git clone <URL-DO-REPOSITORIO> /opt/switch-safe
+cd /opt/switch-safe
+
+# 3. Configuração
+sudo cp .env.example .env
+sudo nano .env          # APP_PORT, TZ, FTP_PUBLIC_HOST=<IP do servidor>, FIREWALL_BACKUP_PATH=/mnt/fw-backup/switch-safe
+
+# 4. Pasta dos backups de firewall (o container roda como UID 1000)
+sudo mkdir -p /mnt/fw-backup/switch-safe
+sudo chown -R 1000:1000 /mnt/fw-backup/switch-safe
+
+# 5. Subir
+sudo docker compose up -d --build
+sudo docker compose ps          # deve aparecer (healthy)
+sudo docker compose logs -f     # Ctrl+C para sair
+```
+
+6. Libere no firewall do servidor a porta da aplicação (`APP_PORT`, padrão 8080) para quem administra, e a
+   porta FTP (21) + faixa passiva (30000-30009) **somente a partir dos firewalls**.
+7. Acesse `http://<IP>:8080` e crie o administrador **imediatamente** (o primeiro acesso cria o admin).
+8. **Guarde uma cópia** de `/data/keys/encryption.key` (ver [Segurança das senhas](#segurança-das-senhas)):
+   `sudo docker cp switch-safe:/data/keys/encryption.key ./encryption.key.bak`
+
+**Atualizar** para uma nova versão:
+
+```bash
+cd /opt/switch-safe && sudo git pull && sudo docker compose up -d --build
+```
+
+O banco e os arquivos ficam nos volumes/pastas e são preservados; colunas novas do banco são migradas
+automaticamente na inicialização.
+
+Observações:
+- Não use `--profile demo` em produção (é o switch simulado).
+- Se `/mnt/fw-backup` for um compartilhamento de rede (NFS/SMB), monte-o com dono UID 1000
+  (SMB: opções `uid=1000,gid=1000`) e garanta que esteja montado antes do Docker iniciar.
+- Em RHEL/Rocky/Alma com SELinux, acrescente `:z` no bind mount (`...:/data/firewalls:z`).
+- Se o servidor já tiver um FTP na porta 21, mude `FTP_PORT` no `.env`.
+
 ## Segurança das senhas
 
 | O quê | Como é armazenado | Por quê |
@@ -132,6 +181,7 @@ Configuração no `.env`:
 | Variável | Padrão | Descrição |
 |---|---|---|
 | `FTP_PUBLIC_HOST` | — | **IP deste servidor como os firewalls o enxergam.** Obrigatório para o modo passivo funcionar através do Docker |
+| `FIREWALL_BACKUP_PATH` | volume Docker | Pasta do host para os arquivos (ex.: `/mnt/fw-backup/switch-safe`); uma subpasta por firewall. Dono UID 1000 |
 | `FTP_PORT` | `21` | Porta FTP exposta no host |
 | `FTP_PASSIVE_PORTS` | `30000-30009` | Faixa passiva (libere no firewall de rede; 10 portas = 10 envios simultâneos) |
 | `FTP_ENABLED` | `true` | Desliga o servidor FTP |
