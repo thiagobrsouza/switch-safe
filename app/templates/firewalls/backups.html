@@ -2,30 +2,31 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Backups de firewalls{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>Backups de firewalls</h1>
-    <p class="muted">{{ page.total }} arquivo(s)</p>
+    <p>{{ page.total }} arquivo(s).</p>
   </div>
-  <a href="{{ url_for('firewalls.latest_zip') }}" class="btn btn-primary">Baixar últimos backups (ZIP)</a>
+  <a href="{{ url_for('firewalls.latest_zip') }}" class="ar-btn ar-btn--primary"><span class="ar-icon">download</span>Baixar últimos backups (ZIP)</a>
 </div>
 
-<form method="get" class="card filters">
-  <label>Firewall
-    <select name="firewall_id">
+<form method="get" class="ar-card app-filters">
+  <div class="ar-field">
+    <label class="ar-field__label" for="firewall_id">Firewall</label>
+    <select class="ar-select" id="firewall_id" name="firewall_id">
       <option value="">Todos</option>
       {% for fw in firewalls %}
         <option value="{{ fw.id }}" {{ 'selected' if firewall_id == fw.id }}>{{ fw.name }}</option>
       {% endfor %}
     </select>
-  </label>
-  <button type="submit" class="btn">Filtrar</button>
-  {% if firewall_id %}<a href="{{ url_for('firewalls.backups') }}" class="btn btn-ghost">Limpar</a>{% endif %}
+  </div>
+  <button type="submit" class="ar-btn ar-btn--outlined"><span class="ar-icon">filter_list</span>Filtrar</button>
+  {% if firewall_id %}<a href="{{ url_for('firewalls.backups') }}" class="ar-btn ar-btn--ghost">Limpar filtros</a>{% endif %}
 </form>
 
-<section class="card">
+<section class="ar-card">
   {% set show_firewall = true %}
-  {% set pager_args = {'firewall_id': firewall_id} if firewall_id else {} %}
   {% include "firewalls/_backups_table.html" %}
+  {{ m.pagination(page, 'firewalls.backups', firewall_id=firewall_id) }}
 </section>
 {% endblock %}

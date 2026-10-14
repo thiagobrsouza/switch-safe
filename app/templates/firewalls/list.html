@@ -2,50 +2,52 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Firewalls{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>Firewalls</h1>
-    <p class="muted">{{ firewalls|length }} firewall(s) · os backups chegam via FTP enviados pelo próprio equipamento</p>
+    <p>{{ firewalls|length }} firewall(s). Os backups chegam por FTP, enviados pelo próprio equipamento.</p>
   </div>
-  <a href="{{ url_for('firewalls.create') }}" class="btn btn-primary">Cadastrar firewall</a>
+  <a href="{{ url_for('firewalls.create') }}" class="ar-btn ar-btn--primary"><span class="ar-icon">add</span>Cadastrar firewall</a>
 </div>
 
 {% include "firewalls/_storage_warning.html" %}
 {% if not ftp.running %}
-  <div class="flash flash-warning">O servidor FTP está desativado (FTP_ENABLED=false). Os firewalls não conseguirão enviar backups.</div>
+  <div class="app-alert app-alert--warning"><span class="ar-icon">warning</span><span>O servidor FTP está desativado (FTP_ENABLED=false). Os firewalls não conseguirão enviar backups.</span></div>
 {% elif not ftp.host %}
-  <div class="flash flash-warning">Defina <code>FTP_PUBLIC_HOST</code> com o IP deste servidor para o modo passivo do FTP funcionar. Veja <a href="{{ url_for('firewalls.settings') }}">Configurações</a>.</div>
+  <div class="app-alert app-alert--warning"><span class="ar-icon">warning</span><span>Defina <code>FTP_PUBLIC_HOST</code> com o IP deste servidor para o modo passivo do FTP funcionar. Veja <a href="{{ url_for('firewalls.settings') }}">Configurações</a>.</span></div>
 {% endif %}
 
-<section class="card">
+<section class="ar-card">
   {% if firewalls %}
-  <div class="table-wrap">
-  <table>
+  <div class="app-table-wrap">
+  <table class="ar-table">
     <thead>
-      <tr><th>Nome</th><th>Fabricante</th><th>Usuário FTP</th><th>Diretório</th><th>Status</th><th>Último backup</th><th>Arquivos</th><th class="actions-col">Ações</th></tr>
+      <tr><th>Nome</th><th>Fabricante</th><th>Usuário FTP</th><th>Diretório</th><th>Status</th><th>Último backup</th><th>Arquivos</th><th class="app-actions-col">Ações</th></tr>
     </thead>
     <tbody>
     {% for fw in firewalls %}
       {% set count, size = stats.get(fw.id, (0, 0)) %}
-      <tr class="{{ 'row-disabled' if not fw.enabled }}">
+      <tr class="{{ 'app-row-muted' if not fw.enabled }}">
         <td>
           <a href="{{ url_for('firewalls.view', firewall_id=fw.id) }}"><strong>{{ fw.name }}</strong></a>
-          {% if fw.description %}<div class="muted small">{{ fw.description }}</div>{% endif %}
+          {% if fw.description %}<div class="app-muted app-small">{{ fw.description }}</div>{% endif %}
         </td>
         <td>{{ fw.vendor_label }}</td>
-        <td class="mono">{{ fw.ftp_username }}</td>
-        <td class="mono">{{ fw.dirname }}/</td>
+        <td class="app-mono">{{ fw.ftp_username }}</td>
+        <td class="app-mono">{{ fw.dirname }}/</td>
         <td>{{ m.firewall_status(fw.status) }}</td>
         <td>
           {{ fw.last_backup_at|localdt }}
-          {% if fw.deadline %}<div class="muted small">esperado até {{ fw.deadline|localdt('%d/%m %H:%M') }}</div>{% endif %}
+          {% if fw.deadline %}<div class="app-muted app-small">esperado até {{ fw.deadline|localdt('%d/%m %H:%M') }}</div>{% endif %}
         </td>
-        <td>{{ count }}<div class="muted small">{{ size|filesize }}</div></td>
-        <td class="actions">
-          <a href="{{ url_for('firewalls.view', firewall_id=fw.id) }}" class="btn btn-sm btn-primary">Abrir</a>
-          <a href="{{ url_for('firewalls.edit', firewall_id=fw.id) }}" class="btn btn-sm">Editar</a>
-          {{ m.confirm_button(url_for('firewalls.delete', firewall_id=fw.id), 'Excluir',
-               'Excluir o firewall ' ~ fw.name ~ ', seu usuário FTP e TODOS os arquivos de backup? Esta ação não pode ser desfeita.') }}
+        <td>{{ count }}<div class="app-muted app-small">{{ size|filesize }}</div></td>
+        <td>
+          <div class="app-actions">
+            {{ m.icon_link(url_for('firewalls.view', firewall_id=fw.id), 'folder_open', 'Abrir firewall') }}
+            {{ m.icon_link(url_for('firewalls.edit', firewall_id=fw.id), 'edit', 'Editar firewall') }}
+            {{ m.delete_button(url_for('firewalls.delete', firewall_id=fw.id), 'Excluir firewall',
+                 'Excluir o firewall ' ~ fw.name ~ ', seu usuário FTP e TODOS os arquivos de backup? Esta ação não pode ser desfeita.') }}
+          </div>
         </td>
       </tr>
     {% endfor %}
@@ -53,7 +55,7 @@
   </table>
   </div>
   {% else %}
-    <p class="empty">Nenhum firewall cadastrado. <a href="{{ url_for('firewalls.create') }}">Cadastre o primeiro</a>.</p>
+    <p class="app-empty">Nenhum firewall cadastrado. <a href="{{ url_for('firewalls.create') }}">Cadastre o primeiro</a>.</p>
   {% endif %}
 </section>
 {% endblock %}

@@ -2,18 +2,22 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Configuração inicial{% endblock %}
 {% block auth %}
-<p class="notice">Primeiro acesso: crie o usuário administrador.</p>
-<form method="post" class="form">
+<div class="app-alert app-alert--info"><span class="ar-icon">info</span><span>Primeiro acesso: crie o usuário administrador.</span></div>
+<form method="post" class="app-stack">
   {{ m.csrf() }}
-  <label>Usuário
-    <input type="text" name="username" value="admin" autocomplete="username" required minlength="3" maxlength="64">
-  </label>
-  <label>Senha <span class="muted">(mínimo 8 caracteres)</span>
-    <input type="password" name="password" autocomplete="new-password" required minlength="8">
-  </label>
-  <label>Confirmar senha
-    <input type="password" name="confirm" autocomplete="new-password" required minlength="8">
-  </label>
-  <button type="submit" class="btn btn-primary btn-block">Criar administrador</button>
+  <div class="ar-field">
+    <label class="ar-field__label" for="username">Usuário<span class="ar-req">*</span></label>
+    <input class="ar-input" type="text" id="username" name="username" value="admin" autocomplete="username" required minlength="3" maxlength="64">
+  </div>
+  <div class="ar-field">
+    <label class="ar-field__label" for="password">Senha<span class="ar-req">*</span></label>
+    <input class="ar-input" type="password" id="password" name="password" autocomplete="new-password" required minlength="8">
+    {{ m.help('Mínimo de 8 caracteres.') }}
+  </div>
+  <div class="ar-field">
+    <label class="ar-field__label" for="confirm">Confirmar senha<span class="ar-req">*</span></label>
+    <input class="ar-input" type="password" id="confirm" name="confirm" autocomplete="new-password" required minlength="8">
+  </div>
+  <button type="submit" class="ar-btn ar-btn--primary ar-btn--block">Criar administrador</button>
 </form>
 {% endblock %}

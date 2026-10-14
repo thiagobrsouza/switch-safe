@@ -2,67 +2,71 @@
 {% import "_macros.html" as m with context %}
 {% block title %}{{ 'Editar ' ~ fw.name if fw else 'Cadastrar firewall' }}{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>{{ 'Editar ' ~ fw.name if fw else 'Cadastrar firewall' }}</h1>
-    <p class="muted">O firewall envia o backup por FTP para o Switch Safe usando o usuário abaixo.</p>
+    <p>O firewall envia o backup por FTP para o Switch Safe usando o usuário abaixo.</p>
   </div>
-  <a href="{{ url_for('firewalls.view', firewall_id=fw.id) if fw else url_for('firewalls.list') }}" class="btn">Voltar</a>
+  <a href="{{ url_for('firewalls.view', firewall_id=fw.id) if fw else url_for('firewalls.list') }}" class="ar-btn ar-btn--outlined"><span class="ar-icon">arrow_back</span>Voltar</a>
 </div>
 
-<form method="post" class="card form" autocomplete="off">
+<form method="post" class="ar-card" autocomplete="off">
   {{ m.csrf() }}
-  <h2>Identificação</h2>
-  <div class="grid-3">
-    <label>Nome *
-      <input type="text" name="name" value="{{ values.name or '' }}" required maxlength="100" placeholder="FW-MATRIZ">
-      <span class="hint">Também define o diretório onde os arquivos ficam.</span>
-    </label>
-    <label>Fabricante *
-      <select name="vendor">
+  <h3 class="app-form-section">Identificação</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field">
+      <label class="ar-field__label" for="name">Nome<span class="ar-req">*</span></label>
+      <input class="ar-input" type="text" id="name" name="name" value="{{ values.name or '' }}" required maxlength="100" placeholder="FW-MATRIZ">
+      {{ m.help('Também define o diretório onde os arquivos ficam.') }}
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="vendor">Fabricante<span class="ar-req">*</span></label>
+      <select class="ar-select" id="vendor" name="vendor">
         {% for key, label in vendors.items() %}
           <option value="{{ key }}" {{ 'selected' if values.vendor == key }}>{{ label }}</option>
         {% endfor %}
       </select>
-    </label>
-    <label>Descrição
-      <input type="text" name="description" value="{{ values.description or '' }}" maxlength="255" placeholder="Matriz - São Paulo">
-    </label>
+    </div>
+    <div class="ar-field ar-span-2">
+      <label class="ar-field__label" for="description">Descrição</label>
+      <input class="ar-input" type="text" id="description" name="description" value="{{ values.description or '' }}" maxlength="255" placeholder="Matriz - São Paulo">
+    </div>
   </div>
 
-  <h2>Acesso FTP deste firewall</h2>
-  <div class="grid-2">
-    <label>Usuário FTP *
-      <input type="text" name="ftp_username" id="ftp_username" value="{{ values.ftp_username or '' }}" required maxlength="32" autocomplete="off">
-    </label>
-    <label>Senha FTP {{ '*' if not fw }}
-      <div class="input-group">
-        <input type="text" name="ftp_password" id="ftp_password" autocomplete="new-password" minlength="8" {{ 'required' if not fw }}
-               placeholder="{{ 'Deixe em branco para manter a atual' if fw else 'mínimo 8 caracteres' }}">
-        <button type="button" class="btn" id="gen_password">Gerar</button>
+  <h3 class="app-form-section">Acesso FTP deste firewall</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field">
+      <label class="ar-field__label" for="ftp_username">Usuário FTP<span class="ar-req">*</span></label>
+      <input class="ar-input app-mono" type="text" name="ftp_username" id="ftp_username" value="{{ values.ftp_username or '' }}" required maxlength="32" autocomplete="off">
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="ftp_password">Senha FTP{% if not fw %}<span class="ar-req">*</span>{% endif %}</label>
+      <div class="app-input-row">
+        <input class="ar-input app-mono" type="text" name="ftp_password" id="ftp_password" autocomplete="new-password" minlength="8" {{ 'required' if not fw }}>
+        <button type="button" class="ar-btn ar-btn--outlined" id="gen_password"><span class="ar-icon">password</span>Gerar senha</button>
       </div>
-      <span class="hint">Copie a senha agora: ela é guardada como hash e não poderá ser exibida depois.</span>
-    </label>
+      {{ m.help(('Deixe em branco para manter a atual. ' if fw else '') ~ 'Copie a senha agora: ela é guardada como hash e não poderá ser exibida depois.') }}
+    </div>
+    <div class="ar-field ar-span-2">
+      <label class="ar-field__label" for="allowed_ips">IPs de origem permitidos</label>
+      <input class="ar-input app-mono" type="text" id="allowed_ips" name="allowed_ips" value="{{ values.allowed_ips or '' }}" placeholder="10.0.0.1, 192.168.10.0/24">
+      {{ m.help('Opcional e recomendado: só aceita login FTP vindo desses IPs ou redes.') }}
+    </div>
   </div>
-  <label>IPs de origem permitidos <span class="muted">(opcional)</span>
-    <input type="text" name="allowed_ips" value="{{ values.allowed_ips or '' }}" placeholder="10.0.0.1, 192.168.10.0/24">
-    <span class="hint">Se preenchido, só aceita login FTP vindo desses IPs/redes. Recomendado.</span>
-  </label>
 
-  <h2>Monitoramento</h2>
-  <label class="inline-field">
-    Alertar se nenhum backup chegar em
-    <input type="number" name="expected_hours" value="{{ values.expected_hours }}" min="0" max="2160" class="input-sm">
-    hora(s) <span class="muted">(0 = não monitorar)</span>
-  </label>
-  <label class="checkbox">
-    <input type="checkbox" name="enabled" {{ 'checked' if values.enabled }}>
-    Firewall ativo (desmarcado, o login FTP é recusado e não há alertas)
-  </label>
+  <h3 class="app-form-section">Monitoramento</h3>
+  <div class="app-checks">
+    <div class="app-inline-field">
+      <label for="expected_hours">Alertar se nenhum backup chegar em</label>
+      <input class="ar-input" type="number" id="expected_hours" name="expected_hours" value="{{ values.expected_hours }}" min="0" max="2160">
+      <span>hora(s)</span><span class="app-muted">(0 = não monitorar)</span>
+    </div>
+    {{ m.switch('enabled', 'Firewall ativo (desativado, o login FTP é recusado e não há alertas)', values.enabled) }}
+  </div>
 
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{{ url_for('firewalls.list') }}" class="btn">Cancelar</a>
+  <div class="ar-form-actions">
+    <a href="{{ url_for('firewalls.list') }}" class="ar-btn ar-btn--outlined">Cancelar</a>
+    <button type="submit" class="ar-btn ar-btn--primary">{{ 'Salvar alterações' if fw else 'Salvar firewall' }}</button>
   </div>
 </form>
 {% endblock %}
@@ -70,7 +74,7 @@
 {% block scripts %}
 <script>
 (function () {
-  var name = document.querySelector('input[name=name]');
+  var name = document.getElementById('name');
   var user = document.getElementById('ftp_username');
   var userTouched = !!user.value;
   user.addEventListener('input', function () { userTouched = true; });

@@ -2,84 +2,86 @@
 {% import "_macros.html" as m with context %}
 {% block title %}{{ 'Editar ' ~ sw.name if sw else 'Cadastrar switch' }}{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>{{ 'Editar ' ~ sw.name if sw else 'Cadastrar switch' }}</h1>
-    <p class="muted">As senhas são armazenadas criptografadas e nunca são exibidas novamente.</p>
+    <p>As senhas são guardadas criptografadas e nunca são exibidas novamente.</p>
   </div>
-  <a href="{{ url_for('switches.list') }}" class="btn">Voltar</a>
+  <a href="{{ url_for('switches.list') }}" class="ar-btn ar-btn--outlined"><span class="ar-icon">arrow_back</span>Voltar</a>
 </div>
 
-<form method="post" class="card form" autocomplete="off">
+<form method="post" class="ar-card" autocomplete="off">
   {{ m.csrf() }}
-  <h2>Identificação</h2>
-  <div class="grid-2">
-    <label>Nome *
-      <input type="text" name="name" value="{{ values.name or '' }}" required maxlength="100" placeholder="SW-CORE-01">
-    </label>
-    <label>Descrição
-      <input type="text" name="description" value="{{ values.description or '' }}" maxlength="255" placeholder="Rack 2 - Datacenter">
-    </label>
+  <h3 class="app-form-section">Identificação</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field">
+      <label class="ar-field__label" for="name">Nome<span class="ar-req">*</span></label>
+      <input class="ar-input" id="name" type="text" name="name" value="{{ values.name or '' }}" required maxlength="100" placeholder="SW-CORE-01">
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="description">Descrição</label>
+      <input class="ar-input" id="description" type="text" name="description" value="{{ values.description or '' }}" maxlength="255" placeholder="Rack 2 - Datacenter">
+    </div>
   </div>
 
-  <h2>Conexão</h2>
-  <div class="grid-3">
-    <label>Tipo de equipamento *
-      <select name="device_type" id="device_type" required>
+  <h3 class="app-form-section">Conexão</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field ar-span-2">
+      <label class="ar-field__label" for="device_type">Tipo de equipamento<span class="ar-req">*</span></label>
+      <select class="ar-select" name="device_type" id="device_type" required>
         {% for key, dt in device_types.items() %}
           <option value="{{ key }}" data-port="{{ dt.port }}" data-command="{{ dt.command }}" {{ 'selected' if values.device_type == key }}>{{ dt.label }}</option>
         {% endfor %}
       </select>
-    </label>
-    <label>IP / Hostname *
-      <input type="text" name="host" value="{{ values.host or '' }}" required maxlength="255" placeholder="10.0.0.1">
-    </label>
-    <label>Porta
-      <input type="number" name="port" id="port" value="{{ values.port or '' }}" min="1" max="65535" placeholder="22">
-    </label>
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="host">IP ou hostname<span class="ar-req">*</span></label>
+      <input class="ar-input" id="host" type="text" name="host" value="{{ values.host or '' }}" required maxlength="255" placeholder="10.0.0.1">
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="port">Porta</label>
+      <input class="ar-input" type="number" name="port" id="port" value="{{ values.port or '' }}" min="1" max="65535" placeholder="22">
+      {{ m.help('Em branco usa a porta padrão do tipo de equipamento.') }}
+    </div>
   </div>
 
-  <h2>Credenciais</h2>
-  <div class="grid-2">
-    <label>Usuário *
-      <input type="text" name="username" value="{{ values.username or '' }}" required maxlength="100" autocomplete="off">
-    </label>
-    <label>Senha {{ '*' if not sw }}
-      <input type="password" name="password" autocomplete="new-password" {{ 'required' if not sw }}
-             placeholder="{{ 'Deixe em branco para manter a atual' if sw else '' }}">
-    </label>
+  <h3 class="app-form-section">Credenciais</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field">
+      <label class="ar-field__label" for="username">Usuário<span class="ar-req">*</span></label>
+      <input class="ar-input" id="username" type="text" name="username" value="{{ values.username or '' }}" required maxlength="100" autocomplete="off">
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="password">Senha{% if not sw %}<span class="ar-req">*</span>{% endif %}</label>
+      <input class="ar-input" id="password" type="password" name="password" autocomplete="new-password" {{ 'required' if not sw }}>
+      {{ m.help('Deixe em branco para manter a senha atual.' if sw else '') }}
+    </div>
+    <div class="ar-field ar-span-2">
+      {{ m.switch('requires_enable', 'Este switch exige senha de enable (modo privilegiado)', values.requires_enable, id='requires_enable') }}
+    </div>
+    <div class="ar-field" id="enable_block">
+      <label class="ar-field__label" for="enable_password">Senha de enable</label>
+      <input class="ar-input" id="enable_password" type="password" name="enable_password" autocomplete="new-password">
+      {{ m.help('Deixe em branco para manter a senha atual.' if sw and sw.requires_enable else '') }}
+    </div>
   </div>
 
-  <label class="checkbox">
-    <input type="checkbox" name="requires_enable" id="requires_enable" {{ 'checked' if values.requires_enable }}>
-    Este switch exige senha de <strong>enable</strong> (modo privilegiado)
-  </label>
-  <div id="enable_block" class="indent">
-    <label>Senha de enable
-      <input type="password" name="enable_password" autocomplete="new-password"
-             placeholder="{{ 'Deixe em branco para manter a atual' if sw and sw.requires_enable else '' }}">
-    </label>
+  <h3 class="app-form-section">Backup</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field ar-span-2">
+      <label class="ar-field__label" for="command">Comando de backup</label>
+      <input class="ar-input app-mono" type="text" name="command" id="command" value="{{ values.command or '' }}" maxlength="255">
+      {{ m.help('Em branco usa o comando padrão do tipo de equipamento.') }}
+    </div>
+    <div class="ar-field ar-span-2 app-checks">
+      {{ m.switch('enabled', 'Incluir este switch no backup agendado', values.enabled) }}
+      {% if not sw %}{{ m.check('run_now', 'Fazer o primeiro backup logo após salvar', true) }}{% endif %}
+    </div>
   </div>
 
-  <h2>Backup</h2>
-  <label>Comando de backup
-    <input type="text" name="command" id="command" value="{{ values.command or '' }}" maxlength="255">
-    <span class="hint">Deixe em branco para usar o padrão do tipo de equipamento.</span>
-  </label>
-  <label class="checkbox">
-    <input type="checkbox" name="enabled" {{ 'checked' if values.enabled }}>
-    Incluir este switch no backup agendado
-  </label>
-  {% if not sw %}
-  <label class="checkbox">
-    <input type="checkbox" name="run_now" checked>
-    Executar o primeiro backup logo após salvar
-  </label>
-  {% endif %}
-
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{{ url_for('switches.list') }}" class="btn">Cancelar</a>
+  <div class="ar-form-actions">
+    <a href="{{ url_for('switches.list') }}" class="ar-btn ar-btn--outlined">Cancelar</a>
+    <button type="submit" class="ar-btn ar-btn--primary">{{ 'Salvar alterações' if sw else 'Salvar switch' }}</button>
   </div>
 </form>
 {% endblock %}

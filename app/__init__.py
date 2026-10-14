@@ -108,7 +108,16 @@ def create_app():
 
     @app.context_processor
     def _inject_globals():
-        return {"app_version": __version__, "device_types": DEVICE_TYPES}
+        ctx = {"app_version": __version__, "device_types": DEVICE_TYPES, "problem_count": 0, "user_initials": ""}
+        if current_user.is_authenticated:
+            from .firewalls.models import Firewall
+            from .models import Switch
+
+            failing = Switch.query.filter(Switch.enabled.is_(True), Switch.last_status == "failed").count()
+            overdue = sum(1 for fw in Firewall.query.filter(Firewall.enabled.is_(True)).all() if fw.is_overdue)
+            ctx["problem_count"] = failing + overdue
+            ctx["user_initials"] = (current_user.username[:2] or "?").upper()
+        return ctx
 
     @app.before_request
     def _require_login():

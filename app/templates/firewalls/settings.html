@@ -2,59 +2,57 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Firewalls · Configurações{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>Firewalls · Configurações</h1>
-    <p class="muted">Retenção dos arquivos e dados do servidor FTP embutido.</p>
+    <p>Retenção dos arquivos e dados do servidor FTP embutido.</p>
   </div>
 </div>
 
 {% include "firewalls/_storage_warning.html" %}
-<form method="post" class="card form">
+<form method="post" class="ar-card">
   {{ m.csrf() }}
-  <h2>Retenção de dados</h2>
-  <div class="grid-2">
-    <label>Manter arquivos por (dias)
-      <input type="number" name="fw_retention_days" value="{{ settings.fw_retention_days }}" min="0" max="3650" required>
-      <span class="hint">Arquivos mais antigos que isso são apagados. 0 = sem limite de tempo.</span>
-    </label>
-    <label>Quantidade máxima por firewall
-      <input type="number" name="fw_retention_max" value="{{ settings.fw_retention_max }}" min="0" max="10000" required>
-      <span class="hint">Mantém só os N arquivos mais recentes de cada firewall. 0 = sem limite.</span>
-    </label>
+  <h3 class="app-form-section">Retenção de dados</h3>
+  <div class="ar-form-grid">
+    <div class="ar-field">
+      <label class="ar-field__label" for="fw_retention_days">Manter arquivos por (dias)<span class="ar-req">*</span></label>
+      <input class="ar-input" type="number" id="fw_retention_days" name="fw_retention_days" value="{{ settings.fw_retention_days }}" min="0" max="3650" required>
+      {{ m.help('Arquivos mais antigos que isso são apagados. 0 = sem limite de tempo.') }}
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="fw_retention_max">Quantidade máxima por firewall<span class="ar-req">*</span></label>
+      <input class="ar-input" type="number" id="fw_retention_max" name="fw_retention_max" value="{{ settings.fw_retention_max }}" min="0" max="10000" required>
+      {{ m.help('Mantém só os N arquivos mais recentes de cada firewall. 0 = sem limite.') }}
+    </div>
   </div>
-  <p class="notice">
-    Aplicada a cada arquivo recebido e diariamente às 04:30. O <strong>arquivo mais recente de cada firewall nunca é apagado</strong>.
-  </p>
-  <div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div>
+  <div class="app-alert app-alert--info"><span class="ar-icon">info</span>
+    <span>A retenção é aplicada a cada arquivo recebido e diariamente às 04:30. O arquivo mais recente de cada firewall nunca é apagado.</span></div>
+  <div class="ar-form-actions"><button type="submit" class="ar-btn ar-btn--primary">Salvar configurações</button></div>
 </form>
 
-<form method="post" action="{{ url_for('firewalls.apply_retention') }}" class="card"
+<form method="post" action="{{ url_for('firewalls.apply_retention') }}" class="ar-card"
       onsubmit="return confirm('Aplicar a política de retenção agora? Os arquivos fora da política serão apagados.');">
   {{ m.csrf() }}
-  <div class="card-header">
-    <div>
-      <h2>Aplicar retenção agora</h2>
-      <p class="muted">Remove imediatamente os arquivos que estão fora da política salva.</p>
-    </div>
-    <button type="submit" class="btn btn-danger">Aplicar agora</button>
+  <div class="ar-card__header">
+    <div><h3 class="ar-card__title">Aplicar retenção agora</h3><p class="ar-card__subtitle">Remove imediatamente os arquivos que estão fora da política salva.</p></div>
+    <button type="submit" class="ar-btn ar-btn--danger"><span class="ar-icon">delete_sweep</span>Aplicar retenção</button>
   </div>
 </form>
 
-<section class="card">
-  <h2>Servidor FTP</h2>
-  <dl class="info">
-    <dt>Status</dt><dd>{% if ftp.running %}<span class="badge badge-ok">Em execução</span>{% else %}<span class="badge badge-fail">Desativado</span>{% endif %}</dd>
-    <dt>Endereço anunciado</dt><dd class="mono">{{ ftp.host or 'não definido' }}</dd>
-    <dt>Porta de controle</dt><dd class="mono">{{ ftp.port }}</dd>
-    <dt>Portas passivas</dt><dd class="mono">{{ ftp.passive }}</dd>
-    <dt>Diretório dos arquivos</dt><dd class="mono">{{ root }}/&lt;nome-do-firewall&gt;/</dd>
+<section class="ar-card">
+  <div class="ar-card__header">
+    <div><h3 class="ar-card__title">Servidor FTP</h3><p class="ar-card__subtitle">Valores definidos no arquivo .env do servidor.</p></div>
+    {% if ftp.running %}{{ m.chip('success', 'check_circle', 'Em execução') }}{% else %}{{ m.chip('danger', 'error', 'Desativado') }}{% endif %}
+  </div>
+  <dl class="app-dl">
+    <dt>Endereço anunciado</dt><dd class="app-mono">{{ ftp.host or 'não definido' }}</dd>
+    <dt>Porta de controle</dt><dd class="app-mono">{{ ftp.port }}</dd>
+    <dt>Portas passivas</dt><dd class="app-mono">{{ ftp.passive }}</dd>
+    <dt>Diretório dos arquivos</dt><dd class="app-mono">{{ root }}/&lt;nome-do-firewall&gt;/</dd>
     <dt>Permissões FTP</dt><dd>listar e enviar arquivos (sem baixar, apagar ou renomear)</dd>
   </dl>
-  <p class="hint">
-    Esses valores vêm das variáveis de ambiente do container (<code>FTP_PUBLIC_HOST</code>, <code>FTP_PORT</code>,
-    <code>FTP_PASSIVE_PORTS</code>) — ajuste no arquivo <code>.env</code> e recrie o container.
-    <strong>FTP não é criptografado</strong>: mantenha o tráfego na rede de gerência e use a restrição de IP de cada firewall.
-  </p>
+  <div class="app-alert app-alert--warning"><span class="ar-icon">warning</span>
+    <span>Para mudar esses valores, ajuste <code>FTP_PUBLIC_HOST</code>, <code>FTP_PORT</code> e <code>FTP_PASSIVE_PORTS</code> no <code>.env</code> e recrie o container.
+    O FTP não é criptografado: mantenha o tráfego na rede de gerência e use a restrição de IP de cada firewall.</span></div>
 </section>
 {% endblock %}

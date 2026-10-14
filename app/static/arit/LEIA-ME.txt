@@ -1,0 +1,2 @@
+Cópia do design system AR IT (fonte: pasta arit-design/, fora do git).
+Para atualizar: copie tokens.css, bundle.css, bundle.js e logos/*.svg da nova versão para cá.

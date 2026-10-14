@@ -2,39 +2,42 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Usuários{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>Usuários</h1>
-    <p class="muted">Pessoas com acesso ao Switch Safe. Senhas são armazenadas apenas como hash Argon2.</p>
+    <p>Pessoas com acesso ao Switch Safe. As senhas são guardadas apenas como hash Argon2.</p>
   </div>
 </div>
 
-<section class="card">
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>Usuário</th><th>Criado em</th><th>Último login</th><th class="actions-col">Ações</th></tr></thead>
+<section class="ar-card">
+  <div class="app-table-wrap">
+  <table class="ar-table">
+    <thead><tr><th>Usuário</th><th>Criado em</th><th>Último login</th><th class="app-actions-col">Ações</th></tr></thead>
     <tbody>
     {% for u in users %}
       <tr>
-        <td><strong>{{ u.username }}</strong>{% if u.id == current_user.id %} <span class="badge badge-info">você</span>{% endif %}</td>
+        <td><strong>{{ u.username }}</strong>{% if u.id == current_user.id %} {{ m.chip('info', 'person', 'Você') }}{% endif %}</td>
         <td>{{ u.created_at|localdt }}</td>
         <td>{{ u.last_login_at|localdt }}</td>
-        <td class="actions">
-          <details class="dropdown">
-            <summary class="btn btn-sm">Alterar senha</summary>
-            <form method="post" action="{{ url_for('users.change_password', user_id=u.id) }}" class="form dropdown-panel">
-              {{ m.csrf() }}
-              {% if u.id == current_user.id %}
-              <input type="password" name="current_password" placeholder="Senha atual" autocomplete="current-password" required>
-              {% endif %}
-              <input type="password" name="password" placeholder="Nova senha" autocomplete="new-password" required minlength="8">
-              <input type="password" name="confirm" placeholder="Confirmar nova senha" autocomplete="new-password" required minlength="8">
-              <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
-            </form>
-          </details>
-          {% if users|length > 1 %}
-            {{ m.confirm_button(url_for('users.delete', user_id=u.id), 'Excluir', 'Excluir o usuário ' ~ u.username ~ '?') }}
-          {% endif %}
+        <td>
+          <div class="app-actions">
+            <details class="app-dropdown">
+              <summary class="ar-icon-btn" aria-label="Alterar senha" title="Alterar senha"><span class="ar-icon">key</span></summary>
+              <form method="post" action="{{ url_for('users.change_password', user_id=u.id) }}" class="app-dropdown__panel">
+                {{ m.csrf() }}
+                <strong>Alterar senha de {{ u.username }}</strong>
+                {% if u.id == current_user.id %}
+                <input class="ar-input" type="password" name="current_password" placeholder="Senha atual" aria-label="Senha atual" autocomplete="current-password" required>
+                {% endif %}
+                <input class="ar-input" type="password" name="password" placeholder="Nova senha" aria-label="Nova senha" autocomplete="new-password" required minlength="8">
+                <input class="ar-input" type="password" name="confirm" placeholder="Confirmar nova senha" aria-label="Confirmar nova senha" autocomplete="new-password" required minlength="8">
+                <button type="submit" class="ar-btn ar-btn--primary ar-btn--sm">Salvar senha</button>
+              </form>
+            </details>
+            {% if users|length > 1 %}
+              {{ m.delete_button(url_for('users.delete', user_id=u.id), 'Excluir usuário', 'Excluir o usuário ' ~ u.username ~ '?') }}
+            {% endif %}
+          </div>
         </td>
       </tr>
     {% endfor %}
@@ -43,22 +46,24 @@
   </div>
 </section>
 
-<form method="post" action="{{ url_for('users.create') }}" class="card form" autocomplete="off">
+<form method="post" action="{{ url_for('users.create') }}" class="ar-card" autocomplete="off">
   {{ m.csrf() }}
-  <h2>Novo usuário</h2>
-  <div class="grid-3">
-    <label>Usuário
-      <input type="text" name="username" required minlength="3" maxlength="64" autocomplete="off">
-    </label>
-    <label>Senha
-      <input type="password" name="password" required minlength="8" autocomplete="new-password">
-    </label>
-    <label>Confirmar senha
-      <input type="password" name="confirm" required minlength="8" autocomplete="new-password">
-    </label>
+  <div class="ar-card__header"><div><h3 class="ar-card__title">Novo usuário</h3><p class="ar-card__subtitle">Todos os usuários têm acesso completo.</p></div></div>
+  <div class="ar-form-grid">
+    <div class="ar-field ar-span-2">
+      <label class="ar-field__label" for="new_username">Usuário<span class="ar-req">*</span></label>
+      <input class="ar-input" type="text" id="new_username" name="username" required minlength="3" maxlength="64" autocomplete="off">
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="new_password">Senha<span class="ar-req">*</span></label>
+      <input class="ar-input" type="password" id="new_password" name="password" required minlength="8" autocomplete="new-password">
+      {{ m.help('Mínimo de 8 caracteres.') }}
+    </div>
+    <div class="ar-field">
+      <label class="ar-field__label" for="new_confirm">Confirmar senha<span class="ar-req">*</span></label>
+      <input class="ar-input" type="password" id="new_confirm" name="confirm" required minlength="8" autocomplete="new-password">
+    </div>
   </div>
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary">Criar usuário</button>
-  </div>
+  <div class="ar-form-actions"><button type="submit" class="ar-btn ar-btn--primary"><span class="ar-icon">person_add</span>Criar usuário</button></div>
 </form>
 {% endblock %}

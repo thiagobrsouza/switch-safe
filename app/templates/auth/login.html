@@ -2,14 +2,18 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Entrar{% endblock %}
 {% block auth %}
-<form method="post" class="form">
+<form method="post" class="app-stack">
   {{ m.csrf() }}
-  <label>Usuário
-    <input type="text" name="username" autocomplete="username" required autofocus>
-  </label>
-  <label>Senha
-    <input type="password" name="password" autocomplete="current-password" required>
-  </label>
-  <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+  <div class="ar-field">
+    <label class="ar-field__label" for="username">Usuário</label>
+    <div class="ar-input-group"><span class="ar-icon">person</span>
+      <input class="ar-input" type="text" id="username" name="username" autocomplete="username" required autofocus></div>
+  </div>
+  <div class="ar-field">
+    <label class="ar-field__label" for="password">Senha</label>
+    <div class="ar-input-group"><span class="ar-icon">lock</span>
+      <input class="ar-input" type="password" id="password" name="password" autocomplete="current-password" required></div>
+  </div>
+  <button type="submit" class="ar-btn ar-btn--primary ar-btn--block"><span class="ar-icon">login</span>Entrar</button>
 </form>
 {% endblock %}

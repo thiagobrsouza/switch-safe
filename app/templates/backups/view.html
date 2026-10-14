@@ -2,21 +2,19 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Backup {{ backup.switch.name }}{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>{{ backup.switch.name }}</h1>
-    <p class="muted">
-      {{ backup.created_at|localdt }} · {{ backup.size|filesize }} · {{ m.trigger_label(backup.trigger) }}
-      {% if backup.changed %}· <span class="badge badge-info">alterado</span>{% endif %}
-    </p>
+    <p>{{ backup.created_at|localdt }} · {{ backup.size|filesize }} · {{ m.trigger_label(backup.trigger) }}</p>
   </div>
-  <div class="actions">
-    <a href="{{ url_for('backups.download', backup_id=backup.id) }}" class="btn btn-primary">Download</a>
-    <a href="{{ url_for('backups.diff', backup_id=backup.id) }}" class="btn">Comparar com anterior</a>
-    <a href="{{ url_for('backups.list', switch_id=backup.switch_id) }}" class="btn">Voltar</a>
+  <div class="app-chips">
+    <a href="{{ url_for('backups.list', switch_id=backup.switch_id) }}" class="ar-btn ar-btn--outlined"><span class="ar-icon">arrow_back</span>Voltar</a>
+    <a href="{{ url_for('backups.diff', backup_id=backup.id) }}" class="ar-btn ar-btn--outlined"><span class="ar-icon">difference</span>Comparar com o anterior</a>
+    <a href="{{ url_for('backups.download', backup_id=backup.id) }}" class="ar-btn ar-btn--primary"><span class="ar-icon">download</span>Baixar arquivo</a>
   </div>
 </div>
-<section class="card">
-  <pre class="config">{{ content }}</pre>
+<section class="ar-card">
+  {% if backup.changed %}<div>{{ m.changed_badge('Configuração diferente do backup anterior') }}</div>{% endif %}
+  <pre class="app-code">{{ content }}</pre>
 </section>
 {% endblock %}

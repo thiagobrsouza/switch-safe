@@ -2,50 +2,60 @@
 {% import "_macros.html" as m with context %}
 {% block title %}{{ fw.name }}{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
-    <h1>{{ fw.name }} {{ m.firewall_status(fw.status) }}</h1>
-    <p class="muted">{{ fw.vendor_label }}{% if fw.description %} · {{ fw.description }}{% endif %}</p>
+    <h1>{{ fw.name }}</h1>
+    <p>{{ fw.vendor_label }}{% if fw.description %} · {{ fw.description }}{% endif %}</p>
   </div>
-  <div class="actions">
-    <a href="{{ url_for('firewalls.edit', firewall_id=fw.id) }}" class="btn">Editar</a>
-    <a href="{{ url_for('firewalls.list') }}" class="btn">Voltar</a>
+  <div class="app-chips">
+    {{ m.firewall_status(fw.status) }}
+    <a href="{{ url_for('firewalls.list') }}" class="ar-btn ar-btn--outlined"><span class="ar-icon">arrow_back</span>Voltar</a>
+    <a href="{{ url_for('firewalls.edit', firewall_id=fw.id) }}" class="ar-btn ar-btn--outlined"><span class="ar-icon">edit</span>Editar firewall</a>
   </div>
 </div>
 
 {% include "firewalls/_storage_warning.html" %}
-<div class="grid-2 cards-row">
-  <section class="card">
-    <h2>Dados para configurar no firewall</h2>
-    <dl class="info">
-      <dt>Servidor FTP</dt><dd class="mono">{{ ftp.host or 'IP-DESTE-SERVIDOR' }}</dd>
-      <dt>Porta</dt><dd class="mono">{{ ftp.port }}</dd>
-      <dt>Usuário</dt><dd class="mono">{{ fw.ftp_username }}</dd>
-      <dt>Senha</dt><dd>definida no cadastro <span class="muted">(não é exibida)</span></dd>
-      <dt>Diretório remoto</dt><dd class="mono">/</dd>
+<div class="app-two-cols">
+  <section class="ar-card">
+    <div class="ar-card__header">
+      <div><h3 class="ar-card__title">Dados para configurar no firewall</h3><p class="ar-card__subtitle">Use no agendamento de backup por FTP do equipamento.</p></div>
+      <span class="ar-icon-tile"><span class="ar-icon">settings_ethernet</span></span>
+    </div>
+    <dl class="app-dl">
+      <dt>Servidor FTP</dt><dd class="app-mono">{{ ftp.host or 'IP-DESTE-SERVIDOR' }}</dd>
+      <dt>Porta</dt><dd class="app-mono">{{ ftp.port }}</dd>
+      <dt>Usuário</dt><dd class="app-mono">{{ fw.ftp_username }}</dd>
+      <dt>Senha</dt><dd>definida no cadastro <span class="app-muted">(não é exibida)</span></dd>
+      <dt>Diretório remoto</dt><dd class="app-mono">/</dd>
       <dt>Modo</dt><dd>Passivo (portas {{ ftp.passive }})</dd>
     </dl>
     {% if fw.vendor == 'fortigate' %}
-    <p class="hint">Teste manual pela CLI do FortiGate:<br>
-      <code>execute backup config ftp {{ fw.dirname }}.conf {{ ftp.host or 'IP' }}{{ ':' ~ ftp.port if ftp.port != 21 }} {{ fw.ftp_username }} &lt;senha&gt;</code></p>
+    <div class="ar-field">
+      <span class="ar-field__label">Teste manual pela CLI do FortiGate</span>
+      <code>execute backup config ftp {{ fw.dirname }}.conf {{ ftp.host or 'IP' }}{{ ':' ~ ftp.port if ftp.port != 21 }} {{ fw.ftp_username }} &lt;senha&gt;</code>
+    </div>
     {% endif %}
-    {% if not ftp.host %}<p class="error-text small">FTP_PUBLIC_HOST não definido — veja Firewalls › Configurações.</p>{% endif %}
+    {% if not ftp.host %}<p class="app-error-text app-small">FTP_PUBLIC_HOST não definido. Veja Firewalls › Configurações.</p>{% endif %}
   </section>
-  <section class="card">
-    <h2>Situação</h2>
-    <dl class="info">
+  <section class="ar-card">
+    <div class="ar-card__header">
+      <div><h3 class="ar-card__title">Situação</h3><p class="ar-card__subtitle">Envios e armazenamento deste firewall.</p></div>
+      <span class="ar-icon-tile"><span class="ar-icon">monitor_heart</span></span>
+    </div>
+    <dl class="app-dl">
       <dt>Último backup</dt><dd>{{ fw.last_backup_at|localdt }}</dd>
       <dt>Próximo esperado até</dt><dd>{{ fw.deadline|localdt if fw.deadline else 'não monitorado' }}</dd>
-      <dt>Último login FTP</dt><dd>{{ fw.last_login_at|localdt }}{% if fw.last_login_ip %} <span class="mono muted">de {{ fw.last_login_ip }}</span>{% endif %}</dd>
-      <dt>IPs permitidos</dt><dd class="mono">{{ fw.allowed_ips or 'qualquer' }}</dd>
+      <dt>Último login FTP</dt><dd>{{ fw.last_login_at|localdt }}{% if fw.last_login_ip %} <span class="app-mono app-muted">de {{ fw.last_login_ip }}</span>{% endif %}</dd>
+      <dt>IPs permitidos</dt><dd class="app-mono">{{ fw.allowed_ips or 'qualquer' }}</dd>
       <dt>Arquivos</dt><dd>{{ page.total }} · {{ total_size|filesize }}</dd>
-      <dt>Localização</dt><dd class="mono small">{{ location }}</dd>
+      <dt>Localização</dt><dd class="app-mono app-small">{{ location }}</dd>
     </dl>
   </section>
 </div>
 
-<section class="card">
-  <div class="card-header"><h2>Arquivos recebidos</h2></div>
+<section class="ar-card">
+  <div class="ar-card__header"><div><h3 class="ar-card__title">Arquivos recebidos</h3><p class="ar-card__subtitle">Mais recentes primeiro.</p></div></div>
   {% include "firewalls/_backups_table.html" %}
+  {{ m.pagination(page, 'firewalls.view', firewall_id=fw.id) }}
 </section>
 {% endblock %}

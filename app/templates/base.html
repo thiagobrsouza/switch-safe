@@ -1,70 +1,131 @@
 {% import "_macros.html" as m with context %}
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% endblock %} · Switch Safe</title>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ app_version }}">
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("ss-theme"); } catch (e) {}
+      if (!t) t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
+  <link rel="icon" href="{{ url_for('static', filename='arit/logos/arit-symbol.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='arit/tokens.css') }}?v={{ app_version }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='arit/bundle.css') }}?v={{ app_version }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ app_version }}">
+  <script src="{{ url_for('static', filename='arit/bundle.js') }}?v={{ app_version }}"></script>
 </head>
 <body>
 {% macro flashes() %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="flashes">
+      <div class="app-alerts" role="status">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% set icon = {'success': 'check_circle', 'error': 'error', 'warning': 'warning'}.get(category, 'info') %}
+          <div class="app-alert app-alert--{{ category }}"><span class="ar-icon">{{ icon }}</span><span>{{ message }}</span></div>
         {% endfor %}
       </div>
     {% endif %}
   {% endwith %}
 {% endmacro %}
 
+{% macro nav(endpoint, icon, label, active) %}
+  <a class="ar-nav-item" href="{{ url_for(endpoint) }}" title="{{ label }}" {{ 'aria-current=page' if active }}>
+    <span class="ar-icon">{{ icon }}</span><span>{{ label }}</span>
+  </a>
+{% endmacro %}
+
 {% if current_user.is_authenticated %}
   {% set ep = request.endpoint or '' %}
-  <div class="layout">
-    <aside class="sidebar">
-      <a class="brand" href="{{ url_for('main.dashboard') }}">
-        <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="28" height="28">
-        <span>Switch Safe</span>
+  <div class="ar-shell">
+    <header class="ar-navbar">
+      <button class="ar-icon-btn ar-icon-btn--on-nav" id="menu-toggle" type="button" aria-label="Recolher menu"><span class="ar-icon">menu</span></button>
+      <a class="ar-navbar__logo" href="{{ url_for('main.dashboard') }}" aria-label="AR IT — início">
+        <img src="{{ url_for('static', filename='arit/logos/arit-logo-dark-bg.svg') }}" alt="AR IT">
       </a>
-      <nav>
-        <a href="{{ url_for('main.dashboard') }}" class="{{ 'active' if ep == 'main.dashboard' }}">Painel</a>
-        <div class="nav-section">Switches</div>
-        <a href="{{ url_for('switches.list') }}" class="{{ 'active' if ep in ['switches.list', 'switches.edit'] }}">Switches monitorados</a>
-        <a href="{{ url_for('switches.create') }}" class="{{ 'active' if ep == 'switches.create' }}">Cadastrar switch</a>
-        <a href="{{ url_for('backups.list') }}" class="{{ 'active' if ep.startswith('backups.') }}">Backups</a>
-        <a href="{{ url_for('settings.retention') }}" class="{{ 'active' if ep == 'settings.retention' }}">Configurações</a>
-        <div class="nav-section">Firewalls</div>
-        <a href="{{ url_for('firewalls.list') }}" class="{{ 'active' if ep in ['firewalls.list', 'firewalls.edit', 'firewalls.view'] }}">Firewalls</a>
-        <a href="{{ url_for('firewalls.create') }}" class="{{ 'active' if ep == 'firewalls.create' }}">Cadastrar firewall</a>
-        <a href="{{ url_for('firewalls.backups') }}" class="{{ 'active' if ep == 'firewalls.backups' }}">Backups</a>
-        <a href="{{ url_for('firewalls.settings') }}" class="{{ 'active' if ep == 'firewalls.settings' }}">Configurações</a>
-        <div class="nav-section">Sistema</div>
-        <a href="{{ url_for('settings.alerts') }}" class="{{ 'active' if ep == 'settings.alerts' }}">Alertas (SMTP)</a>
-        <a href="{{ url_for('users.list') }}" class="{{ 'active' if ep == 'users.list' }}">Usuários</a>
-      </nav>
-      <div class="sidebar-footer">
-        <span class="muted">Conectado como <strong>{{ current_user.username }}</strong></span>
-        <form method="post" action="{{ url_for('auth.logout') }}">
-          {{ m.csrf() }}<button type="submit" class="btn btn-sm btn-ghost">Sair</button>
+      <span class="ar-navbar__app">Switch Safe</span>
+      <div class="ar-navbar__spacer"></div>
+      <div class="ar-navbar__actions">
+        <a class="ar-icon-btn ar-icon-btn--on-nav" href="{{ url_for('main.dashboard') }}"
+           aria-label="{{ problem_count ~ ' problema(s) de backup' if problem_count else 'Nenhum problema de backup' }}"
+           title="{{ problem_count ~ ' problema(s) de backup' if problem_count else 'Nenhum problema de backup' }}">
+          <span class="ar-icon">notifications</span>{% if problem_count %}<span class="ar-dot"></span>{% endif %}
+        </a>
+        <button class="ar-icon-btn ar-icon-btn--on-nav" id="theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema"><span class="ar-icon">dark_mode</span></button>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="app-logout">
+          {{ m.csrf() }}
+          <button class="ar-icon-btn ar-icon-btn--on-nav" type="submit" aria-label="Sair" title="Sair"><span class="ar-icon">logout</span></button>
         </form>
-        <span class="muted small">v{{ app_version }}</span>
+        <span class="ar-avatar app-navbar-avatar" title="{{ current_user.username }}">{{ user_initials }}</span>
       </div>
-    </aside>
-    <main class="content">
+    </header>
+
+    <nav class="ar-sidebar" id="sidebar" aria-label="Menu principal">
+      {{ nav('main.dashboard', 'space_dashboard', 'Painel', ep == 'main.dashboard') }}
+
+      <div class="ar-sidebar__group">Switches</div>
+      {{ nav('switches.list', 'lan', 'Switches', ep in ['switches.list', 'switches.edit']) }}
+      {{ nav('switches.create', 'add_circle', 'Cadastrar switch', ep == 'switches.create') }}
+      {{ nav('backups.list', 'history', 'Backups', ep.startswith('backups.')) }}
+      {{ nav('settings.retention', 'tune', 'Configurações', ep == 'settings.retention') }}
+
+      <div class="ar-sidebar__group">Firewalls</div>
+      {{ nav('firewalls.list', 'shield', 'Firewalls', ep in ['firewalls.list', 'firewalls.edit', 'firewalls.view']) }}
+      {{ nav('firewalls.create', 'add_moderator', 'Cadastrar firewall', ep == 'firewalls.create') }}
+      {{ nav('firewalls.backups', 'folder_zip', 'Backups', ep == 'firewalls.backups') }}
+      {{ nav('firewalls.settings', 'tune', 'Configurações', ep == 'firewalls.settings') }}
+
+      <div class="ar-sidebar__group">Sistema</div>
+      {{ nav('settings.alerts', 'mail', 'Alertas por e-mail', ep == 'settings.alerts') }}
+      {{ nav('users.list', 'group', 'Usuários', ep == 'users.list') }}
+
+      <div class="ar-sidebar__footer">
+        <span class="ar-avatar">{{ user_initials }}</span>
+        <div class="ar-sidebar__user"><b>{{ current_user.username }}</b><span>Switch Safe v{{ app_version }}</span></div>
+      </div>
+    </nav>
+
+    <main class="ar-shell__main">
       {{ flashes() }}
       {% block content %}{% endblock %}
     </main>
   </div>
+  <script>
+    (function () {
+      var sidebar = document.getElementById("sidebar");
+      var api = ARIT.sidebar(sidebar);
+      try { if (localStorage.getItem("ss-sidebar") === "collapsed") api.collapse(true); } catch (e) {}
+      document.getElementById("menu-toggle").addEventListener("click", function () {
+        if (window.matchMedia("(max-width: 900px)").matches) { sidebar.classList.toggle("is-open"); return; }
+        api.collapse();
+        try { localStorage.setItem("ss-sidebar", sidebar.classList.contains("ar-sidebar--collapsed") ? "collapsed" : "open"); } catch (e) {}
+      });
+      var themeBtn = document.getElementById("theme-toggle");
+      function syncIcon() {
+        themeBtn.querySelector(".ar-icon").textContent =
+          document.documentElement.getAttribute("data-theme") === "dark" ? "light_mode" : "dark_mode";
+      }
+      themeBtn.addEventListener("click", function () {
+        var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        ARIT.setTheme(next);
+        try { localStorage.setItem("ss-theme", next); } catch (e) {}
+        syncIcon();
+      });
+      syncIcon();
+    })();
+  </script>
 {% else %}
-  <main class="auth">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="44" height="44">
+  <main class="app-auth">
+    <div class="ar-card">
+      <div class="app-auth__brand">
+        <img class="app-logo-light" src="{{ url_for('static', filename='arit/logos/arit-logo-light-bg.svg') }}" alt="AR IT">
+        <img class="app-logo-dark" src="{{ url_for('static', filename='arit/logos/arit-logo-dark-bg.svg') }}" alt="AR IT">
         <h1>Switch Safe</h1>
-        <p class="muted">Backup de configuração de switches</p>
+        <p>Backup de configuração de switches e firewalls</p>
       </div>
       {{ flashes() }}
       {% block auth %}{% endblock %}

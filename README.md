@@ -35,6 +35,16 @@ pede a criação do usuário administrador — faça isso logo após subir o con
 
 Logs: `docker compose logs -f switch-safe`
 
+## Interface
+
+A interface segue o **design system AR IT** (navbar e menu lateral em petróleo, verde AR IT nos destaques,
+DM Sans + Roboto, ícones Material Symbols, tema claro e escuro). Os arquivos usados ficam em
+`app/static/arit/` (cópia de `tokens.css`, `bundle.css`, `bundle.js` e logos); os complementos do sistema
+estão em `app/static/app.css`, sempre com `var(--token)`. Para atualizar o design system, copie os arquivos
+da nova versão para `app/static/arit/`.
+
+As fontes e ícones são carregados do Google Fonts, então o navegador de quem acessa precisa de internet.
+
 ## Instalação em servidor (produção)
 
 A imagem `switch-safe:latest` **não vem de um registro**: o `docker compose` a constrói a partir do código
@@ -83,6 +93,18 @@ Observações:
   (SMB: opções `uid=1000,gid=1000`) e garanta que esteja montado antes do Docker iniciar.
 - Em RHEL/Rocky/Alma com SELinux, acrescente `:z` no bind mount (`...:/data/firewalls:z`).
 - Se o servidor já tiver um FTP na porta 21, mude `FTP_PORT` no `.env`.
+
+## Esqueci a senha
+
+Redefina pelo terminal do servidor (a nova senha é digitada sem eco e gravada como hash):
+
+```bash
+sudo docker exec -it switch-safe python -m app.cli reset-password admin
+```
+
+Para ver os usuários existentes: `sudo docker exec -it switch-safe python -m app.cli list-users`.
+Se o login web estiver bloqueado por tentativas erradas, o bloqueio expira em 10 minutos (ou reinicie o
+container: `sudo docker compose restart`).
 
 ## Segurança das senhas
 

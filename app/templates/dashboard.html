@@ -2,88 +2,95 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Painel{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
     <h1>Painel</h1>
-    <p class="muted">
-      Última execução: {{ settings.last_run_at|localdt if settings.last_run_at else 'nunca' }}
-      {% if settings.last_run_summary %}· {{ settings.last_run_summary }}{% endif %}
-    </p>
+    <p>Última execução dos switches: {{ settings.last_run_at|localdt if settings.last_run_at else 'nunca' }}
+      {% if settings.last_run_summary %}· {{ settings.last_run_summary }}{% endif %}</p>
   </div>
   <form method="post" action="{{ url_for('switches.run_all') }}">
-    {{ m.csrf() }}<button type="submit" class="btn btn-primary" {{ 'disabled' if not stats.enabled }}>Backup de todos os switches</button>
+    {{ m.csrf() }}
+    <button type="submit" class="ar-btn ar-btn--primary" {{ 'disabled' if not stats.enabled }}><span class="ar-icon">play_arrow</span>Fazer backup dos switches</button>
   </form>
 </div>
 
-<h2 class="module-title">Switches</h2>
-<div class="stats">
-  <div class="stat">
-    <span class="stat-label">Switches ativos</span>
-    <span class="stat-value">{{ stats.enabled }}<small> / {{ stats.total }}</small></span>
+<h2 class="app-section-title">Switches</h2>
+<div class="ar-grid">
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Switches ativos</span><span class="ar-icon-tile"><span class="ar-icon">lan</span></span></div>
+    <div class="ar-stat__value">{{ stats.enabled }} <span class="body-lg app-muted">de {{ stats.total }}</span></div>
   </div>
-  <div class="stat {{ 'stat-danger' if stats.failing else 'stat-ok' }}">
-    <span class="stat-label">Com falha no último backup</span>
-    <span class="stat-value">{{ stats.failing }}</span>
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Com falha no último backup</span>
+      {% if stats.failing %}{{ m.chip('danger', 'error', 'Atenção') }}{% else %}{{ m.chip('success', 'check_circle', 'Tudo certo') }}{% endif %}</div>
+    <div class="ar-stat__value">{{ stats.failing }}</div>
   </div>
-  <div class="stat">
-    <span class="stat-label">Backups armazenados</span>
-    <span class="stat-value">{{ stats.backups }}<small> · {{ stats.storage|filesize }}</small></span>
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Backups armazenados</span><span class="ar-icon-tile"><span class="ar-icon">inventory_2</span></span></div>
+    <div class="ar-stat__value">{{ stats.backups }} <span class="body-lg app-muted">{{ stats.storage|filesize }}</span></div>
   </div>
-  <div class="stat">
-    <span class="stat-label">Próxima execução</span>
-    <span class="stat-value stat-value-sm">{{ next_run|localdt('%d/%m %H:%M') if next_run else 'Agendamento desativado' }}</span>
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Próxima execução</span><span class="ar-icon-tile"><span class="ar-icon">schedule</span></span></div>
+    <div class="ar-stat__value app-stat-sm">{{ next_run|localdt('%d/%m %H:%M') if next_run else 'Desativado' }}</div>
   </div>
 </div>
 
-<section class="card">
-  <div class="card-header"><h2>Situação dos switches</h2><a href="{{ url_for('switches.create') }}" class="btn btn-sm">Cadastrar switch</a></div>
+<section class="ar-card">
+  <div class="ar-card__header">
+    <div><h3 class="ar-card__title">Situação dos switches</h3><p class="ar-card__subtitle">Resultado do último backup de cada switch.</p></div>
+    <a href="{{ url_for('switches.create') }}" class="ar-btn ar-btn--ghost ar-btn--sm"><span class="ar-icon">add</span>Cadastrar switch</a>
+  </div>
   {% if switches %}
-  <div class="table-wrap">
-  <table>
+  <div class="app-table-wrap">
+  <table class="ar-table">
     <thead><tr><th>Nome</th><th>Endereço</th><th>Status</th><th>Último sucesso</th><th>Último erro</th></tr></thead>
     <tbody>
     {% for sw in switches %}
-      <tr class="{{ 'row-disabled' if not sw.enabled }}">
-        <td><a href="{{ url_for('backups.list', switch_id=sw.id) }}">{{ sw.name }}</a>{% if not sw.enabled %} <span class="badge badge-muted">inativo</span>{% endif %}</td>
-        <td class="mono">{{ sw.host }}</td>
+      <tr class="{{ 'app-row-muted' if not sw.enabled }}">
+        <td><a href="{{ url_for('backups.list', switch_id=sw.id) }}">{{ sw.name }}</a>{% if not sw.enabled %} {{ m.inactive_badge() }}{% endif %}</td>
+        <td class="app-mono">{{ sw.host }}</td>
         <td>{{ m.status_badge(sw.last_status) }}</td>
         <td>{{ sw.last_success_at|localdt }}</td>
-        <td><span class="error-text" title="{{ sw.last_error or '' }}">{{ sw.last_error or '' }}</span></td>
+        <td><span class="app-error-text app-clamp" title="{{ sw.last_error or '' }}">{{ sw.last_error or '' }}</span></td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
   {% else %}
-    <p class="empty">Nenhum switch cadastrado. <a href="{{ url_for('switches.create') }}">Cadastre o primeiro</a>.</p>
+    <p class="app-empty">Nenhum switch cadastrado. <a href="{{ url_for('switches.create') }}">Cadastre o primeiro</a>.</p>
   {% endif %}
 </section>
 
-<h2 class="module-title">Firewalls</h2>
-<div class="stats">
-  <div class="stat">
-    <span class="stat-label">Firewalls ativos</span>
-    <span class="stat-value">{{ fw_stats.enabled }}<small> / {{ fw_stats.total }}</small></span>
+<h2 class="app-section-title">Firewalls</h2>
+<div class="ar-grid">
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Firewalls ativos</span><span class="ar-icon-tile"><span class="ar-icon">shield</span></span></div>
+    <div class="ar-stat__value">{{ fw_stats.enabled }} <span class="body-lg app-muted">de {{ fw_stats.total }}</span></div>
   </div>
-  <div class="stat {{ 'stat-danger' if fw_stats.overdue else 'stat-ok' }}">
-    <span class="stat-label">Backup atrasado</span>
-    <span class="stat-value">{{ fw_stats.overdue }}</span>
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Backup atrasado</span>
+      {% if fw_stats.overdue %}{{ m.chip('danger', 'error', 'Atenção') }}{% else %}{{ m.chip('success', 'check_circle', 'Tudo certo') }}{% endif %}</div>
+    <div class="ar-stat__value">{{ fw_stats.overdue }}</div>
   </div>
-  <div class="stat">
-    <span class="stat-label">Arquivos armazenados</span>
-    <span class="stat-value">{{ fw_stats.backups }}<small> · {{ fw_stats.storage|filesize }}</small></span>
+  <div class="ar-card">
+    <div class="ar-card__header"><span class="ar-stat__label">Arquivos armazenados</span><span class="ar-icon-tile"><span class="ar-icon">folder_zip</span></span></div>
+    <div class="ar-stat__value">{{ fw_stats.backups }} <span class="body-lg app-muted">{{ fw_stats.storage|filesize }}</span></div>
   </div>
 </div>
 
-<section class="card">
-  <div class="card-header"><h2>Situação dos firewalls</h2><a href="{{ url_for('firewalls.create') }}" class="btn btn-sm">Cadastrar firewall</a></div>
+<section class="ar-card">
+  <div class="ar-card__header">
+    <div><h3 class="ar-card__title">Situação dos firewalls</h3><p class="ar-card__subtitle">Backups recebidos por FTP.</p></div>
+    <a href="{{ url_for('firewalls.create') }}" class="ar-btn ar-btn--ghost ar-btn--sm"><span class="ar-icon">add</span>Cadastrar firewall</a>
+  </div>
   {% if firewalls %}
-  <div class="table-wrap">
-  <table>
+  <div class="app-table-wrap">
+  <table class="ar-table">
     <thead><tr><th>Nome</th><th>Fabricante</th><th>Status</th><th>Último backup recebido</th><th>Próximo esperado até</th></tr></thead>
     <tbody>
     {% for fw in firewalls %}
-      <tr class="{{ 'row-disabled' if not fw.enabled }}">
+      <tr class="{{ 'app-row-muted' if not fw.enabled }}">
         <td><a href="{{ url_for('firewalls.view', firewall_id=fw.id) }}">{{ fw.name }}</a></td>
         <td>{{ fw.vendor_label }}</td>
         <td>{{ m.firewall_status(fw.status) }}</td>
@@ -95,26 +102,29 @@
   </table>
   </div>
   {% else %}
-    <p class="empty">Nenhum firewall cadastrado. <a href="{{ url_for('firewalls.create') }}">Cadastre o primeiro</a>.</p>
+    <p class="app-empty">Nenhum firewall cadastrado. <a href="{{ url_for('firewalls.create') }}">Cadastre o primeiro</a>.</p>
   {% endif %}
 </section>
 
-<section class="card">
-  <div class="card-header"><h2>Atividade recente dos switches</h2><a href="{{ url_for('backups.list') }}" class="btn btn-sm">Ver todos</a></div>
+<section class="ar-card">
+  <div class="ar-card__header">
+    <div><h3 class="ar-card__title">Atividade recente dos switches</h3><p class="ar-card__subtitle">Últimas 10 execuções.</p></div>
+    <a href="{{ url_for('backups.list') }}" class="ar-btn ar-btn--ghost ar-btn--sm">Ver todos</a>
+  </div>
   {% if recent %}
-  <div class="table-wrap">
-  <table>
+  <div class="app-table-wrap">
+  <table class="ar-table">
     <thead><tr><th>Data</th><th>Switch</th><th>Status</th><th>Origem</th><th>Detalhe</th></tr></thead>
     <tbody>
     {% for b in recent %}
       <tr>
         <td>{{ b.created_at|localdt }}</td>
         <td>{{ b.switch.name }}</td>
-        <td>{{ m.status_badge(b.status) }}{% if b.changed %} <span class="badge badge-info">alterado</span>{% endif %}</td>
+        <td><div class="app-chips">{{ m.status_badge(b.status) }}{% if b.changed %}{{ m.changed_badge() }}{% endif %}</div></td>
         <td>{{ m.trigger_label(b.trigger) }}</td>
         <td>
           {% if b.status == 'success' %}<a href="{{ url_for('backups.view', backup_id=b.id) }}">{{ b.size|filesize }}</a>
-          {% else %}<span class="error-text" title="{{ b.error }}">{{ b.error }}</span>{% endif %}
+          {% else %}<span class="app-error-text app-clamp" title="{{ b.error }}">{{ b.error }}</span>{% endif %}
         </td>
       </tr>
     {% endfor %}
@@ -122,7 +132,7 @@
   </table>
   </div>
   {% else %}
-    <p class="empty">Nenhum backup executado ainda.</p>
+    <p class="app-empty">Nenhum backup executado ainda.</p>
   {% endif %}
 </section>
 {% endblock %}

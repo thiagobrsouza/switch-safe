@@ -1,17 +1,27 @@
 {% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
 
+{% macro chip(kind, icon, label, title=None) -%}
+  <span class="ar-chip ar-chip--{{ kind }}"{% if title %} title="{{ title }}"{% endif %}><span class="ar-icon">{{ icon }}</span>{{ label }}</span>
+{%- endmacro %}
+
 {% macro status_badge(status) %}
-  {%- if status == 'success' -%}<span class="badge badge-ok">Sucesso</span>
-  {%- elif status == 'failed' -%}<span class="badge badge-fail">Falha</span>
-  {%- else -%}<span class="badge badge-muted">Sem backup</span>
+  {%- if status == 'success' -%}{{ chip('success', 'check_circle', 'Sucesso') }}
+  {%- elif status == 'failed' -%}{{ chip('danger', 'error', 'Falha') }}
+  {%- else -%}{{ chip('neutral', 'schedule', 'Sem backup') }}
   {%- endif -%}
 {% endmacro %}
 
+{% macro changed_badge(title='Conteúdo diferente do backup anterior') -%}
+  {{ chip('info', 'difference', 'Alterado', title) }}
+{%- endmacro %}
+
+{% macro inactive_badge() -%}{{ chip('neutral', 'pause_circle', 'Inativo') }}{%- endmacro %}
+
 {% macro firewall_status(status) %}
-  {%- if status == 'ok' -%}<span class="badge badge-ok">Em dia</span>
-  {%- elif status == 'atrasado' -%}<span class="badge badge-fail">Atrasado</span>
-  {%- elif status == 'aguardando' -%}<span class="badge badge-info">Aguardando 1º envio</span>
-  {%- else -%}<span class="badge badge-muted">Inativo</span>
+  {%- if status == 'ok' -%}{{ chip('success', 'check_circle', 'Em dia') }}
+  {%- elif status == 'atrasado' -%}{{ chip('danger', 'error', 'Atrasado') }}
+  {%- elif status == 'aguardando' -%}{{ chip('info', 'hourglass_empty', 'Aguardando 1º envio') }}
+  {%- else -%}{{ inactive_badge() }}
   {%- endif -%}
 {% endmacro %}
 
@@ -19,8 +29,38 @@
   {%- if trigger == 'agendado' -%}Agendado{%- else -%}Manual{%- endif -%}
 {% endmacro %}
 
-{% macro confirm_button(action, label, message, cls='btn btn-sm btn-danger') %}
-<form method="post" action="{{ action }}" class="inline" onsubmit="return confirm({{ message|tojson|forceescape }});">
-  {{ csrf() }}<button type="submit" class="{{ cls }}">{{ label }}</button>
-</form>
-{% endmacro %}
+{# Botão só com ícone para ações de linha de tabela #}
+{% macro icon_link(href, icon, label) -%}
+  <a class="ar-icon-btn" href="{{ href }}" aria-label="{{ label }}" title="{{ label }}"><span class="ar-icon">{{ icon }}</span></a>
+{%- endmacro %}
+
+{% macro icon_post(action, icon, label, confirm=None, danger=False) -%}
+  <form method="post" action="{{ action }}"{% if confirm %} onsubmit="return confirm({{ confirm|tojson|forceescape }});"{% endif %}>
+    {{ csrf() }}<button type="submit" class="ar-icon-btn{{ ' app-icon-btn--danger' if danger }}" aria-label="{{ label }}" title="{{ label }}"><span class="ar-icon">{{ icon }}</span></button>
+  </form>
+{%- endmacro %}
+
+{% macro delete_button(action, label, message) -%}
+  {{ icon_post(action, 'delete', label, message, danger=True) }}
+{%- endmacro %}
+
+{# Campos de formulário #}
+{% macro help(text) -%}{% if text %}<span class="ar-field__help">{{ text }}</span>{% endif %}{%- endmacro %}
+
+{% macro check(name, label, checked) -%}
+  <label class="ar-check"><input type="checkbox" name="{{ name }}" {{ 'checked' if checked }}><span class="ar-check__box"></span>{{ label }}</label>
+{%- endmacro %}
+
+{% macro switch(name, label, checked, id=None) -%}
+  <label class="ar-switch"><input type="checkbox" name="{{ name }}"{% if id %} id="{{ id }}"{% endif %} {{ 'checked' if checked }}><span class="ar-switch__track"></span>{{ label }}</label>
+{%- endmacro %}
+
+{% macro pagination(page, endpoint) -%}
+  {% if page.pages > 1 %}
+  <nav class="app-pagination" aria-label="Paginação">
+    {% if page.has_prev %}<a class="ar-btn ar-btn--outlined ar-btn--sm" href="{{ url_for(endpoint, page=page.prev_num, **kwargs) }}"><span class="ar-icon">chevron_left</span>Anterior</a>{% endif %}
+    <span class="app-muted">Página {{ page.page }} de {{ page.pages }}</span>
+    {% if page.has_next %}<a class="ar-btn ar-btn--outlined ar-btn--sm" href="{{ url_for(endpoint, page=page.next_num, **kwargs) }}">Próxima<span class="ar-icon">chevron_right</span></a>{% endif %}
+  </nav>
+  {% endif %}
+{%- endmacro %}

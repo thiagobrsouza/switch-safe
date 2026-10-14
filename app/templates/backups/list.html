@@ -1,76 +1,72 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m with context %}
-{% block title %}Backups{% endblock %}
+{% block title %}Backups de switches{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ar-page-head">
   <div>
-    <h1>Backups</h1>
-    <p class="muted">{{ page.total }} registro(s)</p>
+    <h1>Backups de switches</h1>
+    <p>{{ page.total }} registro(s).</p>
   </div>
-  <a href="{{ url_for('backups.latest_zip') }}" class="btn btn-primary">Baixar últimos backups (ZIP)</a>
+  <a href="{{ url_for('backups.latest_zip') }}" class="ar-btn ar-btn--primary"><span class="ar-icon">download</span>Baixar últimos backups (ZIP)</a>
 </div>
 
-<form method="get" class="card filters">
-  <label>Switch
-    <select name="switch_id">
+<form method="get" class="ar-card app-filters">
+  <div class="ar-field">
+    <label class="ar-field__label" for="switch_id">Switch</label>
+    <select class="ar-select" id="switch_id" name="switch_id">
       <option value="">Todos</option>
       {% for sw in switches %}
         <option value="{{ sw.id }}" {{ 'selected' if switch_id == sw.id }}>{{ sw.name }}</option>
       {% endfor %}
     </select>
-  </label>
-  <label>Status
-    <select name="status">
+  </div>
+  <div class="ar-field">
+    <label class="ar-field__label" for="status">Status</label>
+    <select class="ar-select" id="status" name="status">
       <option value="">Todos</option>
       <option value="success" {{ 'selected' if status == 'success' }}>Sucesso</option>
       <option value="failed" {{ 'selected' if status == 'failed' }}>Falha</option>
     </select>
-  </label>
-  <button type="submit" class="btn">Filtrar</button>
-  {% if switch_id or status %}<a href="{{ url_for('backups.list') }}" class="btn btn-ghost">Limpar</a>{% endif %}
+  </div>
+  <button type="submit" class="ar-btn ar-btn--outlined"><span class="ar-icon">filter_list</span>Filtrar</button>
+  {% if switch_id or status %}<a href="{{ url_for('backups.list') }}" class="ar-btn ar-btn--ghost">Limpar filtros</a>{% endif %}
 </form>
 
-<section class="card">
+<section class="ar-card">
   {% if page.items %}
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>Data</th><th>Switch</th><th>Status</th><th>Origem</th><th>Tamanho</th><th>Duração</th><th class="actions-col">Ações</th></tr></thead>
+  <div class="app-table-wrap">
+  <table class="ar-table">
+    <thead><tr><th>Data</th><th>Switch</th><th>Status</th><th>Origem</th><th>Tamanho</th><th>Duração</th><th class="app-actions-col">Ações</th></tr></thead>
     <tbody>
     {% for b in page.items %}
       <tr>
         <td>{{ b.created_at|localdt }}</td>
         <td>{{ b.switch.name }}</td>
         <td>
-          {{ m.status_badge(b.status) }}
-          {% if b.changed %}<span class="badge badge-info" title="Configuração diferente do backup anterior">alterado</span>{% endif %}
-          {% if b.status == 'failed' %}<div class="error-text small" title="{{ b.error }}">{{ b.error }}</div>{% endif %}
+          <div class="app-chips">{{ m.status_badge(b.status) }}{% if b.changed %}{{ m.changed_badge('Configuração diferente do backup anterior') }}{% endif %}</div>
+          {% if b.status == 'failed' %}<div class="app-error-text app-small app-clamp" title="{{ b.error }}">{{ b.error }}</div>{% endif %}
         </td>
         <td>{{ m.trigger_label(b.trigger) }}</td>
         <td>{{ b.size|filesize if b.status == 'success' else '—' }}</td>
         <td>{{ '%.1f s'|format(b.duration) if b.duration is not none else '—' }}</td>
-        <td class="actions">
-          {% if b.status == 'success' %}
-            <a href="{{ url_for('backups.view', backup_id=b.id) }}" class="btn btn-sm">Ver</a>
-            <a href="{{ url_for('backups.download', backup_id=b.id) }}" class="btn btn-sm btn-primary">Download</a>
-            <a href="{{ url_for('backups.diff', backup_id=b.id) }}" class="btn btn-sm">Comparar</a>
-          {% endif %}
-          {{ m.confirm_button(url_for('backups.delete', backup_id=b.id), 'Excluir', 'Excluir este registro de backup?') }}
+        <td>
+          <div class="app-actions">
+            {% if b.status == 'success' %}
+              {{ m.icon_link(url_for('backups.view', backup_id=b.id), 'visibility', 'Ver configuração') }}
+              {{ m.icon_link(url_for('backups.diff', backup_id=b.id), 'difference', 'Comparar com o anterior') }}
+              {{ m.icon_link(url_for('backups.download', backup_id=b.id), 'download', 'Baixar arquivo') }}
+            {% endif %}
+            {{ m.delete_button(url_for('backups.delete', backup_id=b.id), 'Excluir registro', 'Excluir este registro de backup?') }}
+          </div>
         </td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
-
-  {% if page.pages > 1 %}
-  <nav class="pagination">
-    {% if page.has_prev %}<a class="btn btn-sm" href="{{ url_for('backups.list', page=page.prev_num, switch_id=switch_id, status=status) }}">← Anterior</a>{% endif %}
-    <span class="muted">Página {{ page.page }} de {{ page.pages }}</span>
-    {% if page.has_next %}<a class="btn btn-sm" href="{{ url_for('backups.list', page=page.next_num, switch_id=switch_id, status=status) }}">Próxima →</a>{% endif %}
-  </nav>
-  {% endif %}
+  {{ m.pagination(page, 'backups.list', switch_id=switch_id, status=status) }}
   {% else %}
-    <p class="empty">Nenhum backup encontrado.</p>
+    <p class="app-empty">Nenhum backup encontrado.</p>
   {% endif %}
 </section>
 {% endblock %}
